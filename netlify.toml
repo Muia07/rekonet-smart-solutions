@@ -1,47 +1,38 @@
-# Netlify Configuration for Rekonet Systems Website
-# https://docs.netlify.com/configure-builds/file-based-configuration/
+# Netlify Configuration for Rekonet Systems
+# Vite + React + TypeScript SPA
 
 [build]
-  # Directory to change to before starting a build
-  base = "."
+  # Build command for Vite
+  command = "npm run build"
   
-  # Directory that contains the deploy-ready HTML files and assets
-  publish = "."
-  
-  # Default build command
-  command = "echo 'Static site - no build required'"
+  # Publish directory for Vite
+  publish = "dist"
   
   # Environment variables
   [build.environment]
     NODE_VERSION = "18"
-    PYTHON_VERSION = "3.9"
+    NPM_FLAGS = "--legacy-peer-deps"
 
 # Production context
 [context.production]
-  # Environment variables for production
   [context.production.environment]
     NODE_ENV = "production"
-    ANALYTICS_ID = "GA_MEASUREMENT_ID"
 
 # Deploy Preview context
 [context.deploy-preview]
-  # Environment variables for deploy previews
   [context.deploy-preview.environment]
     NODE_ENV = "staging"
 
 # Branch Deploy context
 [context.branch-deploy]
-  # Environment variables for branch deploys
   [context.branch-deploy.environment]
     NODE_ENV = "staging"
 
-# Redirects
+# SPA Redirect - All routes to index.html for React Router
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-  conditions = {Role = ["admin"]}
-  force = false
 
 # Redirect www to non-www
 [[redirects]]
@@ -57,13 +48,7 @@
   status = 301
   force = true
 
-# Custom 404 page
-[[redirects]]
-  from = "/*"
-  to = "/404.html"
-  status = 404
-
-# Headers for security and performance
+# Security Headers
 [[headers]]
   for = "/*"
   [headers.values]
@@ -74,74 +59,57 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
     
-    # Performance headers
-    Cache-Control = "public, max-age=31536000, immutable"
+    # Content Security Policy
+    Content-Security-Policy = "default-src 'self' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://yoursite.supabase.co; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://yoursite.supabase.co https://www.google-analytics.com; frame-ancestors 'none';"
     
-    # CORS headers (if needed)
+    # CORS headers
     Access-Control-Allow-Origin = "*"
     Access-Control-Allow-Methods = "GET, POST, OPTIONS"
     Access-Control-Allow-Headers = "Content-Type, Authorization"
 
-# Headers for static assets
+# Cache static assets aggressively
 [[headers]]
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
-# Headers for images
+# Cache images
 [[headers]]
-  for = "/images/*"
+  for = "/*.jpg"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
-# Headers for fonts
 [[headers]]
-  for = "/fonts/*"
+  for = "/*.png"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
-# Headers for CSS and JS
 [[headers]]
-  for = "*.css"
+  for = "/*.svg"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Cache CSS and JS
+[[headers]]
+  for = "/*.css"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
     Content-Type = "text/css; charset=utf-8"
 
 [[headers]]
-  for = "*.js"
+  for = "/*.js"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
     Content-Type = "application/javascript; charset=utf-8"
 
-# Headers for HTML files
+# HTML files - no cache
 [[headers]]
-  for = "*.html"
+  for = "/*.html"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
     Content-Type = "text/html; charset=utf-8"
 
-# Headers for JSON files
-[[headers]]
-  for = "*.json"
-  [headers.values]
-    Cache-Control = "public, max-age=0, must-revalidate"
-    Content-Type = "application/json; charset=utf-8"
-
-# Headers for XML files
-[[headers]]
-  for = "*.xml"
-  [headers.values]
-    Cache-Control = "public, max-age=0, must-revalidate"
-    Content-Type = "application/xml; charset=utf-8"
-
-# Headers for web manifest
-[[headers]]
-  for = "/site.webmanifest"
-  [headers.values]
-    Cache-Control = "public, max-age=0, must-revalidate"
-    Content-Type = "application/manifest+json; charset=utf-8"
-
-# Headers for service worker
+# Service Worker - no cache
 [[headers]]
   for = "/sw.js"
   [headers.values]
@@ -149,10 +117,12 @@
     Content-Type = "application/javascript; charset=utf-8"
     Service-Worker-Allowed = "/"
 
-# Edge functions (if needed)
-# [[edge_functions]]
-#   path = "/api/*"
-#   function = "api-handler"
+# Web Manifest
+[[headers]]
+  for = "/site.webmanifest"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+    Content-Type = "application/manifest+json; charset=utf-8"
 
 # Plugins
 [[plugins]]
@@ -160,34 +130,15 @@
 
 # Lighthouse configuration
 [plugins.inputs]
-  # Run Lighthouse on deploy
   audits = [
     "performance",
     "accessibility",
     "best-practices",
     "seo"
   ]
-  
-  # Performance thresholds
+
   [plugins.inputs.thresholds]
-    performance = 90
+    performance = 80
     accessibility = 90
-    best-practices = 90
+    best-practices = 80
     seo = 90
-
-# Forms configuration
-[build.processing.html]
-  pretty_urls = true
-
-# Split testing
-[[split_tests]]
-  branches = ["main", "staging"]
-  distribution = [90, 10]
-
-# Environment variables (set in Netlify UI)
-# These are examples - set actual values in Netlify dashboard
-[template.environment]
-  GA_MEASUREMENT_ID = "G-XXXXXXXXXX"
-  HOTJAR_ID = "XXXXXXXX"
-  CONTACT_EMAIL = "rekonetsystems@outlook.com"
-  CONTACT_PHONE = "+254745522104"

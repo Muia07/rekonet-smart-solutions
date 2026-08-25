@@ -1,0 +1,60 @@
+# Rekonet Systems - Robots.txt
+# https://rekonetsystems.netlify.app/robots.txt
+
+# Allow all web crawlers
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://rekonetsystems.netlify.app/sitemap.xml
+
+# Crawl-delay for polite crawling
+Crawl-delay: 10
+
+# Disallow admin and private areas
+Disallow: /admin/
+Disallow: /auth
+Disallow: /api/
+
+# Allow important pages
+Allow: /
+Allow: /about
+Allow: /services
+Allow: /solutions
+Allow: /pricing
+Allow: /contact
+Allow: /blog
+Allow: /faq
+Allow: /testimonials
+Allow: /why-us
+Allow: /downloads
+
+# Google specific directives
+User-agent: Googlebot
+Allow: /
+Disallow: /admin/
+Disallow: /auth
+Crawl-delay: 5
+
+# Bing specific directives
+User-agent: Bingbot
+Allow: /
+Disallow: /admin/
+Disallow: /auth
+Crawl-delay: 10
+
+# Social media crawlers
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: WhatsApp
+Allow: /
+
+# Host directive
+Host: https://rekonetsystems.netlify.app
