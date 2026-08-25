@@ -4,7 +4,7 @@
   "description": "Rekonet Systems - Professional POS & Inventory Management Solutions",
   "main": "index.html",
   "scripts": {
-    "dev": "serve -s . -l 8080",
+    "dev": "node scripts/dev-server.js",
     "start": "serve -s . -l 3000",
     "build": "node -e \"require('fs').accessSync('index.html'); require('fs').accessSync('src/js/rekonet.js'); require('fs').accessSync('src/css/rekonet.css'); console.log('Static site ready')\"",
     "build:dev": "npm run build",
