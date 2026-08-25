@@ -1,12 +1,12 @@
 # Netlify Configuration for Rekonet Systems
-# Vite + React + TypeScript SPA
+# Static React bundle deployment
 
 [build]
-  # Build command for Vite
+  # Validate static assets before deploy
   command = "npm run build"
   
-  # Publish directory for Vite
-  publish = "dist"
+  # Publish the static site root
+  publish = "."
   
   # Environment variables
   [build.environment]
@@ -60,7 +60,7 @@
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
     
     # Content Security Policy
-    Content-Security-Policy = "default-src 'self' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://yoursite.supabase.co; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://yoursite.supabase.co https://www.google-analytics.com; frame-ancestors 'none';"
+    Content-Security-Policy = "default-src 'self' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://aiqodirqebqptnycmgwt.supabase.co; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://www.google-analytics.com https://aiqodirqebqptnycmgwt.supabase.co; frame-ancestors 'none';"
     
     # CORS headers
     Access-Control-Allow-Origin = "*"

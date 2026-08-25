@@ -4,8 +4,10 @@
   "description": "Rekonet Systems - Professional POS & Inventory Management Solutions",
   "main": "index.html",
   "scripts": {
-    "start": "npx serve -s . -l 3000",
-    "build": "echo 'Static site - no build required'",
+    "dev": "node scripts/dev-server.js",
+    "start": "serve -s . -l 3000",
+    "build": "node -e \"require('fs').accessSync('index.html'); require('fs').accessSync('src/js/rekonet.js'); require('fs').accessSync('src/css/rekonet.css'); console.log('Static site ready')\"",
+    "build:dev": "npm run build",
     "deploy": "npm run build && echo 'Ready for deployment'",
     "test": "echo 'No tests specified'",
     "lint": "echo 'No linter configured'",
