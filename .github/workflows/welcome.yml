@@ -1,0 +1,63 @@
+name: Welcome
+
+on:
+  issues:
+    types: [opened]
+  pull_request:
+    types: [opened]
+
+jobs:
+  welcome:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    
+    steps:
+      - name: 'Welcome issue'
+        uses: actions/first-interaction@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          issue-message: |
+            ## Welcome to Rekonet Systems! 🎉
+            
+            Thank you for opening your first issue! We appreciate your contribution.
+            
+            ### What happens next?
+            - A maintainer will review your issue
+            - We'll ask for clarification if needed
+            - We'll work together to resolve the issue
+            
+            ### Need help?
+            - Check our [README](README.md) for project information
+            - Read our [CONTRIBUTING](CONTRIBUTING.md) guidelines
+            - Contact us at rekonetsystems@outlook.com
+            
+            ### Stay connected
+            - ⭐ Star this repository if you find it useful
+            - 👀 Watch this repository for updates
+            - 🐦 Follow us on Twitter: @rekonet_systems
+            
+            Thank you for being part of our community! 🚀
+          pr-message: |
+            ## Welcome to Rekonet Systems! 🎉
+            
+            Thank you for opening your first pull request! We appreciate your contribution.
+            
+            ### What happens next?
+            - A maintainer will review your PR
+            - We'll provide feedback if needed
+            - Once approved, your changes will be merged
+            
+            ### Checklist
+            - [ ] Code follows project standards
+            - [ ] Tests pass
+            - [ ] Documentation updated
+            - [ ] No breaking changes
+            
+            ### Need help?
+            - Check our [README](README.md) for project information
+            - Read our [CONTRIBUTING](CONTRIBUTING.md) guidelines
+            - Contact us at rekonetsystems@outlook.com
+            
+            Thank you for being part of our community! 🚀

@@ -1,0 +1,67 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Push events to matching v*, i.e. v1.0, v20.15.10
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Create Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        body: |
+          ## Changes in this Release
+          
+          ### Added
+          - New features and improvements
+          
+          ### Changed
+          - Changes to existing features
+          
+          ### Fixed
+          - Bug fixes and improvements
+          
+          ### Security
+          - Security updates
+          
+          ## Installation
+          
+          ### Quick Start
+          ```bash
+          git clone https://github.com/yourusername/rekonet-systems.git
+          cd rekonet-systems
+          npm install
+          npm start
+          ```
+          
+          ### Deployment
+          See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for deployment instructions.
+          
+          ## Documentation
+          
+          - [README.md](README.md) - Project overview
+          - [REKONET_IMPROVEMENTS.md](REKONET_IMPROVEMENTS.md) - Detailed improvements
+          - [IMPLEMENTATION_CHECKLIST.md](IMPLEMENTATION_CHECKLIST.md) - Implementation guide
+          - [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) - Deployment instructions
+          
+          ## Support
+          
+          - **Email**: rekonetsystems@outlook.com
+          - **Phone**: +254 745 522 104
+          - **Hours**: Mon-Fri, 8:00 AM - 6:00 PM EAT
+          
+          ---
+          
+          **Full Changelog**: https://github.com/yourusername/rekonet-systems/commits/${{ github.ref }}
+        draft: false
+        prerelease: false

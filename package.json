@@ -1,0 +1,40 @@
+{
+  "name": "rekonet-systems-website",
+  "version": "2.0.0",
+  "description": "Rekonet Systems - Professional POS & Inventory Management Solutions",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve -s . -l 3000",
+    "build": "echo 'Static site - no build required'",
+    "deploy": "npm run build && echo 'Ready for deployment'",
+    "test": "echo 'No tests specified'",
+    "lint": "echo 'No linter configured'",
+    "optimize": "node scripts/optimize.js",
+    "analyze": "echo 'Run Lighthouse for performance analysis'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/rekonet-systems.git"
+  },
+  "keywords": [
+    "pos-system",
+    "inventory-management",
+    "business-software",
+    "kenya",
+    "africa",
+    "e-commerce",
+    "website-development"
+  ],
+  "author": "Rekonet Systems",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/yourusername/rekonet-systems/issues"
+  },
+  "homepage": "https://rekonetsystems.netlify.app",
+  "devDependencies": {
+    "serve": "^14.0.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

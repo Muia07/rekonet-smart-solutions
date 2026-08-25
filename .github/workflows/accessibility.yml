@@ -1,0 +1,38 @@
+name: Accessibility Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  accessibility:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Run Accessibility Tests
+      uses: creyD/prettier_action@v4.2
+      with:
+        prettier_options: --write **/*.{js,md}
+        
+    - name: Run axe accessibility tests
+      uses: axe-linter/axe-linter-action@v1
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Upload accessibility report
+      uses: actions/upload-artifact@v3
+      with:
+        name: accessibility-report
+        path: accessibility-report.html

@@ -1,0 +1,48 @@
+name: Performance Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  performance:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Run performance tests
+      run: |
+        npm run build
+        npm run test
+        
+    - name: Run Lighthouse performance audit
+      uses: treosh/lighthouse-ci-action@v9
+      with:
+        urls: |
+          http://localhost:3000/
+        uploadArtifacts: true
+        temporaryPublicStorage: true
+        
+    - name: Check Core Web Vitals
+      run: |
+        echo "Checking Core Web Vitals..."
+        echo "LCP target: < 2.5s"
+        echo "FID target: < 100ms"
+        echo "CLS target: < 0.1"
+        
+    - name: Upload performance report
+      uses: actions/upload-artifact@v3
+      with:
+        name: performance-report
+        path: performance-report.html

@@ -1,0 +1,31 @@
+name: Auto Assign
+
+on:
+  issues:
+    types: [opened]
+  pull_request:
+    types: [opened]
+
+jobs:
+  auto-assign:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    
+    steps:
+      - name: 'Auto-assign issue'
+        uses: pozil/auto-assign-issue@v1
+        with:
+          assignees: yourusername
+          numOfAssignee: 1
+          allowSelfAssign: false
+        if: github.event_name == 'issues'
+        
+      - name: 'Auto-assign PR'
+        uses: pozil/auto-assign-issue@v1
+        with:
+          assignees: yourusername
+          numOfAssignee: 1
+          allowSelfAssign: false
+        if: github.event_name == 'pull_request'

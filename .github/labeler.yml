@@ -1,0 +1,110 @@
+# Configuration for labeler action
+# Labels are automatically applied based on file paths
+
+# Frontend labels
+frontend:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'src/**'
+      - 'public/**'
+      - '*.html'
+      - '*.css'
+      - '*.js'
+
+# Documentation labels
+documentation:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '*.md'
+      - 'docs/**'
+      - 'README*'
+      - 'CHANGELOG*'
+      - 'CONTRIBUTING*'
+
+# Configuration labels
+configuration:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/**'
+      - 'package.json'
+      - 'netlify.toml'
+      - '*.yml'
+      - '*.yaml'
+
+# SEO labels
+seo:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'sitemap.xml'
+      - 'robots.txt'
+      - 'public/sitemap.xml'
+      - 'public/robots.txt'
+
+# Security labels
+security:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'public/sw.js'
+      - 'public/site.webmanifest'
+      - '.github/workflows/security.yml'
+
+# Performance labels
+performance:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'src/css/**'
+      - 'src/js/**'
+      - '.github/workflows/performance.yml'
+      - '.github/workflows/lighthouse.yml'
+
+# Accessibility labels
+accessibility:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/workflows/accessibility.yml'
+      - 'public/offline.html'
+
+# Legal labels
+legal:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'public/privacy-policy.html'
+      - 'public/terms.html'
+      - 'LICENSE'
+
+# Deployment labels
+deployment:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'deploy.sh'
+      - 'DEPLOYMENT_GUIDE.md'
+      - '.github/workflows/deploy*.yml'
+      - 'netlify.toml'
+
+# Bug fix labels
+bug:
+  - head-branch:
+    - '^bug/'
+    - '^fix/'
+    - '^hotfix/'
+
+# Feature labels
+feature:
+  - head-branch:
+    - '^feature/'
+    - '^feat/'
+    - '^enhancement/'
+
+# Documentation labels
+docs:
+  - head-branch:
+    - '^docs/'
+    - '^documentation/'
+    - '^doc/'
+
+# Chore labels
+chore:
+  - head-branch:
+    - '^chore/'
+    - '^maintenance/'
+    - '^refactor/'
