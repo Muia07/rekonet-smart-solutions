@@ -10,6 +10,6 @@
     "allowJs": false,
     "types": []
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/integrations/supabase/types.ts"],
   "exclude": ["node_modules", "dist"]
 }
