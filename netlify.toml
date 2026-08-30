@@ -5,8 +5,8 @@
   # Validate static assets before deploy
   command = "npm run build"
   
-  # Publish the static site root
-  publish = "."
+  # Publish the built static site from dist/
+  publish = "dist"
   
   # Environment variables
   [build.environment]
