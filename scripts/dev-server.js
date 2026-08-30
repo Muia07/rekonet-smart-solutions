@@ -65,6 +65,12 @@ const server = http.createServer((req, res) => {
       send(res, 200, requested);
       return;
     }
+    // Directory (or extensionless path) with its own index.html -> serve it
+    const dirIndex = path.join(requested, 'index.html');
+    if (fs.existsSync(dirIndex)) {
+      send(res, 200, dirIndex);
+      return;
+    }
     send(res, 200, path.join(root, 'index.html'));
   });
 });
