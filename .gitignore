@@ -80,10 +80,23 @@ dist
 
 # Gatsby files
 .cache/
-public
+# NOTE: "public" is intentionally NOT ignored here. This project commits its
+# static assets in public/ (robots.txt, site.webmanifest, Google verification
+# file, APK downloads, etc.) and scripts/build-static.js copies them into dist/.
+# Ignoring public/ would prevent the Google verification file and APK from
+# being committed and deployed to Netlify.
 
 # Vuepress build output
 .vuepress/dist
+
+# Generated SEO landing/blog pages produced by scripts/generate-seo-pages.js
+# during the prebuild step. These are regenerated on every build and must not
+# be committed (the real static assets in public/ ARE committed).
+public/blog/
+public/pos-system-kenya/
+public/pos-system-nairobi/
+public/inventory-management-software-kenya/
+public/mpesa-pos-integration/
 
 # Serverless directories
 .serverless/
