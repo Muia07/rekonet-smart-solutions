@@ -12,7 +12,9 @@
     "test": "echo 'No tests specified'",
     "lint": "echo 'No linter configured'",
     "optimize": "node scripts/optimize.js",
-    "analyze": "echo 'Run Lighthouse for performance analysis'"
+    "analyze": "echo 'Run Lighthouse for performance analysis'",
+    "predev": "node scripts/generate-seo-pages.js",
+    "prebuild": "node scripts/generate-seo-pages.js"
   },
   "repository": {
     "type": "git",

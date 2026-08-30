@@ -52,22 +52,31 @@ function send(res, status, filePath) {
 const server = http.createServer((req, res) => {
   const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
   const cleanPath = decodeURIComponent(url.pathname).replace(/^\/+/, '');
-  const requested = path.normalize(path.join(root, cleanPath || 'index.html'));
+  const publicRoot = path.join(root, 'public');
 
-  if (!requested.startsWith(root)) {
-    res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
-    res.end('Forbidden');
-    return;
-  }
-
-  fs.stat(requested, (error, stats) => {
-    if (!error && stats.isFile()) {
-      send(res, 200, requested);
+  // Try the project root first, then public/ (Netlify serves public/ at the site root)
+  const bases = [root, publicRoot];
+  const candidates = [];
+  for (const base of bases) {
+    const target = path.normalize(path.join(base, cleanPath || 'index.html'));
+    if (!target.startsWith(base)) {
+      res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('Forbidden');
       return;
     }
-    send(res, 200, path.join(root, 'index.html'));
-  });
+    candidates.push(target, path.join(target, 'index.html'));
+  }
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+      send(res, 200, candidate);
+      return;
+    }
+  }
+
+  send(res, 200, path.join(root, 'index.html'));
 });
+
 
 server.listen(port, host, () => {
   console.log(`Rekonet dev server listening on http://${host}:${port}`);
