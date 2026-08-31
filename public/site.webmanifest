@@ -1,14 +1,14 @@
 {
-  "name": "Rekonet Systems - POS & Inventory Management",
+  "name": "Rekonet Inv Systems — POS & Inventory",
   "short_name": "Rekonet",
-  "description": "Professional POS systems, inventory management, and custom software solutions for businesses across Africa",
+  "description": "Offline-first Windows POS, inventory, reconciliation and scoped business software for Kenyan businesses",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a2540",
   "theme_color": "#0a2540",
   "orientation": "portrait",
   "scope": "/",
-  "lang": "en",
+  "lang": "en-KE",
   "categories": ["business", "productivity", "finance"],
   "icons": [
     {
@@ -38,9 +38,9 @@
   ],
   "shortcuts": [
     {
-      "name": "Book Demo",
+      "name": "Request Demo",
       "short_name": "Demo",
-      "description": "Book a free demo of our POS system",
+      "description": "Request a Rekonet POS workflow demo or quote",
       "url": "/contact",
       "icons": [
         {

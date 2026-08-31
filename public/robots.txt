@@ -25,7 +25,7 @@ Allow: /pricing
 Allow: /contact
 Allow: /blog
 Allow: /faq
-Allow: /testimonials
+Allow: /use-cases
 Allow: /why-us
 Allow: /downloads
 

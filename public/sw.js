@@ -1,5 +1,5 @@
-// Rekonet Systems Service Worker v4.0
-const CACHE_NAME = 'rekonet-v4';
+// Rekonet Inv Systems Service Worker v5.0
+const CACHE_NAME = 'rekonet-v5';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

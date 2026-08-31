@@ -25,7 +25,26 @@ body {
 
 a { color: var(--brand); }
 
+a:focus-visible,
+button:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
 img { max-width: 100%; height: auto; }
+
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 100;
+  padding: 10px 14px;
+  border-radius: 8px;
+  color: #fff;
+  background: var(--brand-dark);
+  transform: translateY(-150%);
+}
+.skip-link:focus { transform: translateY(0); }
 
 .wrap { width: 100%; max-width: 980px; margin: 0 auto; padding: 0 20px; }
 
@@ -137,7 +156,39 @@ article.content h3 { margin: 26px 0 8px; font-size: 1.12rem; }
 article.content p, article.content li { color: #26313f; }
 article.content ul, article.content ol { padding-left: 22px; }
 article.content li { margin-bottom: 8px; }
-.meta { color: var(--muted); font-size: 0.9rem; margin: 0 0 18px; }
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin: 0 0 18px;
+}
+
+.article-hero {
+  margin: 0 0 22px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+.article-hero img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+.article-hero figcaption {
+  padding: 9px 14px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.price-note,
+.source-note {
+  color: var(--muted) !important;
+  font-size: 0.92rem;
+}
 
 .callout {
   background: var(--surface);
@@ -166,6 +217,77 @@ th { background: var(--surface); color: var(--brand); font-weight: 700; }
 .card h3 { margin: 0 0 8px; color: var(--brand); font-size: 1.05rem; }
 .card p { margin: 0; color: var(--muted); font-size: 0.95rem; }
 
+.steps li,
+.checklist li { padding-left: 4px; }
+
+.related {
+  margin-top: 52px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.article-links a { text-decoration: none; }
+.article-link { display: block; }
+.article-link:hover h3 { text-decoration: underline; }
+.tag {
+  display: inline-block;
+  margin-bottom: 10px;
+  color: var(--accent-dark);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.blog-intro h2 { margin-top: 0 !important; }
+.blog-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  margin: 32px 0;
+}
+.blog-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(0, 43, 91, 0.06);
+}
+.blog-card-image {
+  display: block;
+  overflow: hidden;
+  background: var(--surface);
+}
+.blog-card-image img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  transition: transform 0.2s ease;
+}
+.blog-card:hover .blog-card-image img { transform: scale(1.025); }
+.blog-card-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 20px;
+}
+article.content .blog-card h2 {
+  margin: 0 0 10px;
+  color: var(--brand);
+  font-size: 1.2rem;
+}
+.blog-card h2 a { color: inherit; text-decoration: none; }
+.blog-card h2 a:hover { text-decoration: underline; }
+.blog-card-body > p:not(.meta) { margin-top: 0; }
+.text-link {
+  margin-top: auto;
+  font-weight: 700;
+  text-decoration: none;
+}
+.text-link:hover { text-decoration: underline; }
+
 /* CTA band */
 .cta-band {
   background: var(--brand);
@@ -186,6 +308,10 @@ th { background: var(--surface); color: var(--brand); font-weight: 700; }
 .site-footer li { margin-bottom: 6px; }
 .legal { margin-top: 26px; border-top: 1px solid rgba(255, 255, 255, 0.12); padding-top: 16px; font-size: 0.85rem; }
 
+@media (max-width: 760px) {
+  .blog-grid { grid-template-columns: 1fr; }
+}
+
 @media (max-width: 640px) {
   body { font-size: 16px; }
   .site-header .wrap { flex-direction: column; align-items: flex-start; padding-top: 8px; padding-bottom: 8px; }
@@ -193,6 +319,7 @@ th { background: var(--surface); color: var(--brand); font-weight: 700; }
   .hero { padding: 40px 0 46px; }
   .btn { width: 100%; }
   .btn-row { flex-direction: column; }
+  .article-hero { border-radius: 12px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
