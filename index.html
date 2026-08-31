@@ -56,7 +56,11 @@
     <!-- Google Fonts with display=swap -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
 
-    <!-- Main stylesheet -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+
+    <!-- Main stylesheet (hash query added at build time) -->
     <link rel="stylesheet" href="/src/css/rekonet.css" />
 
     <!-- DNS Prefetch -->
@@ -191,17 +195,33 @@
     <!-- Load compiled React app -->
     <script type="module" src="/src/js/rekonet.js"></script>
 
-    <!-- Service Worker Registration -->
+    <!-- Service Worker: always revalidate so deploys show without a hard refresh -->
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then(registration => {
-              console.log('SW registered:', registration.scope);
+          navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
+            .then((registration) => {
+              registration.update();
+              if (registration.waiting) {
+                registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+              }
+              registration.addEventListener('updatefound', () => {
+                const worker = registration.installing;
+                if (!worker) return;
+                worker.addEventListener('statechange', () => {
+                  if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+                    worker.postMessage({ type: 'SKIP_WAITING' });
+                  }
+                });
+              });
             })
-            .catch(error => {
-              console.log('SW registration failed:', error);
-            });
+            .catch(() => {});
+          let refreshing = false;
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (refreshing) return;
+            refreshing = true;
+            window.location.reload();
+          });
         });
       }
     </script>
