@@ -73,24 +73,46 @@ const ctaBand = `<section class="cta-band">
   </div>
 </section>`;
 
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 function page({ slug, title, description, h1, eyebrow, lede, crumbs, body, jsonld }) {
   const url = `${BASE_URL}/${slug}/`;
+  const safeTitle = escapeHtml(title);
+  const safeDescription = escapeHtml(description);
+  const safeH1 = escapeHtml(h1);
+  const safeEyebrow = escapeHtml(eyebrow);
+  const safeLede = escapeHtml(lede);
   return `<!doctype html>
 <html lang="en-KE">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>${title}</title>
-<meta name="description" content="${description}" />
+<title>${safeTitle}</title>
+<meta name="description" content="${safeDescription}" />
 <link rel="canonical" href="${url}" />
-<meta property="og:title" content="${title}" />
-<meta property="og:description" content="${description}" />
+<meta property="og:title" content="${safeTitle}" />
+<meta property="og:description" content="${safeDescription}" />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="${url}" />
+<meta property="og:image" content="${BASE_URL}/og-image.png" />
+<meta property="og:image:secure_url" content="${BASE_URL}/og-image.png" />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="Rekonet Systems — POS, inventory and custom business software" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="${title}" />
-<meta name="twitter:description" content="${description}" />
+<meta name="twitter:title" content="${safeTitle}" />
+<meta name="twitter:description" content="${safeDescription}" />
+<meta name="twitter:image" content="${BASE_URL}/og-image.png" />
+<meta name="twitter:image:alt" content="Rekonet Systems — POS, inventory and custom business software" />
 <link rel="icon" href="/favicon.ico" />
+<meta name="theme-color" content="#0a2540" />
 <link rel="stylesheet" href="/src/css/seo-pages.css" />
 <script type="application/ld+json">${JSON.stringify(jsonld)}</script>
 </head>
@@ -99,9 +121,9 @@ ${header}
 <main>
   <section class="hero">
     <div class="wrap">
-      <p class="eyebrow">${eyebrow}</p>
-      <h1>${h1}</h1>
-      <p class="lede">${lede}</p>
+      <p class="eyebrow">${safeEyebrow}</p>
+      <h1>${safeH1}</h1>
+      <p class="lede">${safeLede}</p>
       <div class="btn-row">
         <a class="btn btn-primary" href="/contact">Book a free demo</a>
         <a class="btn btn-ghost" href="/pricing">See pricing in KSH</a>

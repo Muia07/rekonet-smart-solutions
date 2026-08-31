@@ -60,7 +60,7 @@
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
     
     # Content Security Policy
-    Content-Security-Policy = "default-src 'self' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://aiqodirqebqptnycmgwt.supabase.co; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://www.google-analytics.com https://aiqodirqebqptnycmgwt.supabase.co; frame-ancestors 'none';"
+    Content-Security-Policy = "default-src 'self' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://aiqodirqebqptnycmgwt.supabase.co; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://aiqodirqebqptnycmgwt.supabase.co; frame-ancestors 'none';"
     
     # CORS headers
     Access-Control-Allow-Origin = "*"
@@ -73,33 +73,40 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
-# Cache images
+# Cache stable image names briefly and revalidate after they expire. Only
+# content-fingerprinted files under /assets/ receive an immutable cache policy.
 [[headers]]
   for = "/*.jpg"
   [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+    Cache-Control = "public, max-age=86400, must-revalidate"
 
 [[headers]]
   for = "/*.png"
   [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+    Cache-Control = "public, max-age=86400, must-revalidate"
 
 [[headers]]
   for = "/*.svg"
   [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+    Cache-Control = "public, max-age=86400, must-revalidate"
 
-# Cache CSS and JS
 [[headers]]
-  for = "/*.css"
+  for = "/*.ico"
   [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+    Cache-Control = "public, max-age=86400, must-revalidate"
+
+# The checked-in CSS and JS bundles use stable filenames, so every request must
+# revalidate them. A year-long immutable policy would make deploys appear stale.
+[[headers]]
+  for = "/src/css/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
     Content-Type = "text/css; charset=utf-8"
 
 [[headers]]
-  for = "/*.js"
+  for = "/src/js/*"
   [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+    Cache-Control = "public, max-age=0, must-revalidate"
     Content-Type = "application/javascript; charset=utf-8"
 
 # HTML files - no cache

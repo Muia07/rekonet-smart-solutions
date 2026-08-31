@@ -1,9 +1,20 @@
-// Rekonet Systems Service Worker v3.0
-const CACHE_NAME = 'rekonet-v3';
+// Rekonet Systems Service Worker v4.0
+const CACHE_NAME = 'rekonet-v4';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
+  '/src/css/rekonet.css',
+  '/src/js/rekonet.js',
+  '/favicon.ico',
   '/favicon.png',
+  '/favicon-16x16.png',
+  '/favicon-32x32.png',
+  '/favicon-96.png',
+  '/favicon-192.png',
+  '/favicon-512.png',
+  '/favicon-maskable-192.png',
+  '/favicon-maskable-512.png',
+  '/apple-touch-icon.png',
   '/site.webmanifest'
 ];
 
