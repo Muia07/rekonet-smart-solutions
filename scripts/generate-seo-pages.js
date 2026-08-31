@@ -6,6 +6,7 @@ const BASE_URL = "https://rekonetsystems.netlify.app";
 const PHONE = "+254745522104";
 const EMAIL = "rekonetsystems@outlook.com";
 const OUT = path.join(__dirname, "..", "public");
+const LASTMOD = new Date().toISOString().slice(0, 10);
 
 const header = `<header class="site-header">
   <div class="wrap">
@@ -35,6 +36,9 @@ const footer = `<footer class="site-footer">
           <li><a href="/pos-system-nairobi/">POS System Nairobi</a></li>
           <li><a href="/inventory-management-software-kenya/">Inventory Software Kenya</a></li>
           <li><a href="/mpesa-pos-integration/">M-Pesa POS Integration</a></li>
+          <li><a href="/stock-and-cash-reconciliation-software-kenya/">Stock &amp; Cash Reconciliation</a></li>
+          <li><a href="/pos-system-mombasa/">POS System Mombasa</a></li>
+          <li><a href="/openpos-download-kenya/">Download OpenPOS</a></li>
         </ul>
       </div>
       <div>
@@ -715,6 +719,7 @@ const xml = [
     [
       "  <url>",
       `    <loc>${BASE_URL}${r.path}</loc>`,
+      `    <lastmod>${LASTMOD}</lastmod>`,
       `    <changefreq>${r.changefreq}</changefreq>`,
       `    <priority>${r.priority}</priority>`,
       "  </url>",
