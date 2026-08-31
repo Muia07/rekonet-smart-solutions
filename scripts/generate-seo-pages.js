@@ -6,6 +6,7 @@ const BASE_URL = "https://rekonetsystems.netlify.app";
 const PHONE = "+254745522104";
 const EMAIL = "rekonetsystems@outlook.com";
 const OUT = path.join(__dirname, "..", "public");
+const LASTMOD = new Date().toISOString().slice(0, 10);
 
 const header = `<header class="site-header">
   <div class="wrap">
@@ -35,6 +36,9 @@ const footer = `<footer class="site-footer">
           <li><a href="/pos-system-nairobi/">POS System Nairobi</a></li>
           <li><a href="/inventory-management-software-kenya/">Inventory Software Kenya</a></li>
           <li><a href="/mpesa-pos-integration/">M-Pesa POS Integration</a></li>
+          <li><a href="/stock-and-cash-reconciliation-software-kenya/">Stock &amp; Cash Reconciliation</a></li>
+          <li><a href="/pos-system-mombasa/">POS System Mombasa</a></li>
+          <li><a href="/openpos-download-kenya/">Download OpenPOS</a></li>
         </ul>
       </div>
       <div>
@@ -354,7 +358,182 @@ ${pricingTable}`,
 <h2>Pricing</h2>
 ${pricingTable}`,
   },
+  {
+    slug: "stock-and-cash-reconciliation-software-kenya",
+    title: "Stock & Cash Reconciliation Software in Kenya | Rekonet",
+    description:
+      "Stop shrinkage and till shortages. Reconcile stock counts, cash and M-Pesa per shift and per branch with Rekonet reconciliation software. From KSH 35,000.",
+    eyebrow: "Reconciliation software",
+    h1: "Stock and Cash Reconciliation Software for Kenyan Businesses",
+    lede:
+      "Know exactly what was sold, what is on the shelf and what should be in the drawer — for every cashier, every shift and every branch.",
+    crumbs: `<a href="/">Home</a> › <a href="/pos-system-kenya/">POS System Kenya</a> › <span>Reconciliation</span>`,
+    jsonld: {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Service",
+          name: "Stock and Cash Reconciliation Software",
+          serviceType: "Inventory and cash reconciliation",
+          provider: org,
+          areaServed: { "@type": "Country", name: "Kenya" },
+        },
+        breadcrumbLd([
+          { name: "Home", path: "/" },
+          { name: "POS System Kenya", path: "/pos-system-kenya/" },
+          {
+            name: "Stock & Cash Reconciliation",
+            path: "/stock-and-cash-reconciliation-software-kenya/",
+          },
+        ]),
+      ],
+    },
+    body: `<h2>Where the money quietly disappears</h2>
+<p>Most Kenyan retailers lose margin in three places: stock that leaves without a sale, cash declared short at close, and M-Pesa payments that never make it to the recorded till. Manual books hide all three until the monthly stock take, by which time nobody remembers the shift in question.</p>
+
+<h2>What the system reconciles</h2>
+<div class="cards">
+  <div class="card"><h3>Cash per shift</h3><p>Opening float, recorded sales, payouts and declared cash compared automatically at close-out.</p></div>
+  <div class="card"><h3>M-Pesa &amp; card</h3><p>Mobile money and card totals matched against the sales recorded under each payment type.</p></div>
+  <div class="card"><h3>Stock counts</h3><p>Physical counts against system stock, with variance by item, value and person who counted.</p></div>
+  <div class="card"><h3>Purchases &amp; returns</h3><p>Goods received notes, supplier returns and damages tracked so stock never drifts silently.</p></div>
+</div>
+
+<h2>How a shift close-out works</h2>
+<ol>
+  <li>The cashier ends the shift and declares cash and mobile money on screen.</li>
+  <li>The system compares declarations against recorded sales, payouts and refunds.</li>
+  <li>Any variance is listed per payment type with the underlying transactions.</li>
+  <li>A supervisor approves, or investigates, before the next shift begins.</li>
+  <li>All variances are stored, so patterns per cashier become visible over weeks.</li>
+</ol>
+
+<h2>Reports owners actually use</h2>
+<ul>
+  <li>Daily variance summary by branch and cashier</li>
+  <li>Stock take variance by value, so you chase the expensive items first</li>
+  <li>Slow and dead stock, to free cash tied up on shelves</li>
+  <li>Gross margin per product category</li>
+  <li>Excel and CSV exports for your accountant</li>
+</ul>
+
+<h2>Pricing</h2>
+${pricingTable}
+<div class="callout"><p>Reconciliation is included from the Business package upwards. Call <a href="tel:${PHONE}">${PHONE}</a> for a quote covering your branches and tills.</p></div>
+<p>Reconciliation runs on the same platform as our till software — see the <a href="/pos-system-kenya/">POS system for Kenya</a> or <a href="/contact">book a free demo</a>.</p>`,
+  },
+  {
+    slug: "openpos-download-kenya",
+    title: "Download OpenPOS — Free Offline POS Software for Windows | Rekonet",
+    description:
+      "Download OpenPOS, an offline-first Windows point of sale for Kenyan retail and hospitality. Sales, stock, reconciliation, reports and thermal receipt printing.",
+    eyebrow: "OpenPOS for Windows",
+    h1: "Download OpenPOS — Offline Point of Sale Software for Windows",
+    lede:
+      "OpenPOS is our Windows POS application for shops, bars and restaurants: it sells, tracks stock, reconciles the till and prints thermal receipts without needing internet.",
+    crumbs: `<a href="/">Home</a> › <a href="/downloads">Downloads</a> › <span>OpenPOS</span>`,
+    jsonld: {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "SoftwareApplication",
+          name: "OpenPOS",
+          applicationCategory: "BusinessApplication",
+          operatingSystem: "Windows 10, Windows 11",
+          softwareVersion: "1.0.0",
+          downloadUrl: `${BASE_URL}/downloads`,
+          publisher: org,
+        },
+        breadcrumbLd([
+          { name: "Home", path: "/" },
+          { name: "Downloads", path: "/downloads" },
+          { name: "OpenPOS", path: "/openpos-download-kenya/" },
+        ]),
+      ],
+    },
+    body: `<h2>What OpenPOS does</h2>
+<p>OpenPOS is a complete offline-first point of sale system for retail and hospitality. Everything runs on the local Windows machine, so trading continues through power flickers and internet outages.</p>
+<div class="cards">
+  <div class="card"><h3>Sales</h3><p>Barcode scanning, quick keys, split and part payments, held bills and refunds.</p></div>
+  <div class="card"><h3>Inventory</h3><p>Live stock levels, purchases, stock takes, reorder alerts and variance tracking.</p></div>
+  <div class="card"><h3>Reconciliation</h3><p>Shift close-out comparing declared cash and mobile money against recorded sales.</p></div>
+  <div class="card"><h3>Printing &amp; reports</h3><p>Thermal receipt printing plus daily sales, margin and cashier reports.</p></div>
+</div>
+
+<h2>System requirements</h2>
+<ul>
+  <li>Windows 10 or higher</li>
+  <li>500 MB free storage (installer is about 26 MB)</li>
+  <li>No internet connection required for core POS operation</li>
+  <li>Optional: 58 mm or 80 mm thermal receipt printer and barcode scanner</li>
+</ul>
+
+<h2>How to install</h2>
+<ol>
+  <li>Open the <a href="/downloads">downloads page</a> and click Download on OpenPOS.</li>
+  <li>Run the downloaded setup executable.</li>
+  <li>If Windows SmartScreen appears, choose <em>More info</em> then <em>Run anyway</em>.</li>
+  <li>Follow the prompts, then launch OpenPOS and complete the initial shop setup.</li>
+</ol>
+<div class="callout"><p>Need help installing, loading your products or connecting a receipt printer? Call <a href="tel:${PHONE}">${PHONE}</a> or email <a href="mailto:${EMAIL}">${EMAIL}</a>.</p></div>
+
+<h2>Setup, training and support</h2>
+<p>We install OpenPOS on site around Nairobi, import your product list and prices, train your cashiers and stay reachable by phone and WhatsApp afterwards. See <a href="/pricing">pricing in KSH</a> or <a href="/contact">book a free demo</a> first.</p>
+<p><a class="btn btn-primary" href="/downloads">Go to the downloads page</a></p>`,
+  },
+  {
+    slug: "pos-system-mombasa",
+    title: "POS System in Mombasa — Setup, Training & Support | Rekonet",
+    description:
+      "POS installation and support for Mombasa shops, restaurants and wholesalers. Offline tills, stock control and M-Pesa reconciliation from KSH 15,000.",
+    eyebrow: "Coast region support",
+    h1: "POS System in Mombasa for Retail, Hospitality and Wholesale",
+    lede:
+      "From Nyali and Bamburi to Likoni, Changamwe and the Old Town, we set up point of sale systems that keep selling when the power and the line go down.",
+    crumbs: `<a href="/">Home</a> › <a href="/pos-system-kenya/">POS System Kenya</a> › <span>Mombasa</span>`,
+    jsonld: {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Service",
+          name: "POS System Installation Mombasa",
+          provider: org,
+          areaServed: { "@type": "City", name: "Mombasa" },
+        },
+        breadcrumbLd([
+          { name: "Home", path: "/" },
+          { name: "POS System Kenya", path: "/pos-system-kenya/" },
+          { name: "Mombasa", path: "/pos-system-mombasa/" },
+        ]),
+      ],
+    },
+    body: `<h2>Built for coast trading conditions</h2>
+<p>Humidity, long tourist-season hours and frequent power interruptions are hard on a till. Rekonet POS stores every sale locally, resumes exactly where it stopped after a shutdown, and runs on modest hardware you may already own.</p>
+
+<h2>Businesses we set up in Mombasa</h2>
+<ul>
+  <li>Supermarkets, mini-marts and general shops</li>
+  <li>Restaurants, cafés, bars and beach hotels</li>
+  <li>Hardware, agrovet and building supply yards</li>
+  <li>Pharmacies and cosmetics retailers</li>
+  <li>Wholesalers and distributors with several branches</li>
+</ul>
+
+<h2>What the setup includes</h2>
+<div class="cards">
+  <div class="card"><h3>Product loading</h3><p>We import your items, prices and suppliers so the system is usable on day one.</p></div>
+  <div class="card"><h3>Hardware check</h3><p>We test your printers, scanners and drawers, and advise only where something must be bought.</p></div>
+  <div class="card"><h3>Staff training</h3><p>Cashiers learn selling and close-out; supervisors learn stock, pricing and reports.</p></div>
+  <div class="card"><h3>Ongoing support</h3><p>Phone and WhatsApp support, remote sessions, and site visits when they are needed.</p></div>
+</div>
+
+<h2>Pricing</h2>
+${pricingTable}
+<div class="callout"><p>Serving Mombasa County and the wider coast — Kilifi, Diani and Malindi included. Call <a href="tel:${PHONE}">${PHONE}</a> to arrange a visit.</p></div>
+<p>Read more about our <a href="/pos-system-kenya/">POS system for Kenya</a>, our <a href="/stock-and-cash-reconciliation-software-kenya/">reconciliation software</a>, or <a href="/contact">book a free demo</a>.</p>`,
+  },
 ];
+
 
 const posts = [
   {
@@ -540,6 +719,7 @@ const xml = [
     [
       "  <url>",
       `    <loc>${BASE_URL}${r.path}</loc>`,
+      `    <lastmod>${LASTMOD}</lastmod>`,
       `    <changefreq>${r.changefreq}</changefreq>`,
       `    <priority>${r.priority}</priority>`,
       "  </url>",

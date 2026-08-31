@@ -9,7 +9,7 @@ Allow: /
 Sitemap: https://rekonetsystems.netlify.app/sitemap.xml
 
 # Crawl-delay for polite crawling
-Crawl-delay: 10
+Crawl-delay: 1
 
 # Disallow admin and private areas
 Disallow: /admin/
@@ -34,14 +34,13 @@ User-agent: Googlebot
 Allow: /
 Disallow: /admin/
 Disallow: /auth
-Crawl-delay: 5
 
 # Bing specific directives
 User-agent: Bingbot
 Allow: /
 Disallow: /admin/
 Disallow: /auth
-Crawl-delay: 10
+Crawl-delay: 1
 
 # Social media crawlers
 User-agent: facebookexternalhit
