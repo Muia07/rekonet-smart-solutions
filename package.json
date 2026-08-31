@@ -1,11 +1,12 @@
 {
   "name": "rekonet-systems-website",
   "version": "2.0.0",
-  "description": "Rekonet Systems - Professional POS & Inventory Management Solutions",
+  "description": "Rekonet Inv Systems website — offline-first POS, inventory and business software for Kenya",
   "main": "index.html",
   "scripts": {
     "dev": "node scripts/dev-server.js",
-    "start": "serve -s . -l 3000",
+    "prestart": "npm run build",
+    "start": "node scripts/dev-server.js --port 3000 --host 0.0.0.0",
     "build": "node scripts/build-static.js",
     "build:dev": "npm run build",
     "deploy": "npm run build && echo 'Ready for deployment'",
@@ -14,11 +15,12 @@
     "optimize": "node scripts/optimize.js",
     "analyze": "echo 'Run Lighthouse for performance analysis'",
     "predev": "node scripts/generate-seo-pages.js",
-    "prebuild": "node scripts/generate-seo-pages.js"
+    "prebuild": "node scripts/generate-seo-pages.js",
+    "content:refresh": "python3 scripts/update-bundled-content.py && node scripts/generate-seo-pages.js"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/rekonet-systems.git"
+    "url": "https://github.com/Muia07/rekonet-smart-solutions.git"
   },
   "keywords": [
     "pos-system",
@@ -29,16 +31,13 @@
     "e-commerce",
     "website-development"
   ],
-  "author": "Rekonet Systems",
+  "author": "Rekonet Inv Systems",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/yourusername/rekonet-systems/issues"
+    "url": "https://github.com/Muia07/rekonet-smart-solutions/issues"
   },
   "homepage": "https://rekonetsystems.netlify.app",
-  "devDependencies": {
-    "serve": "^14.0.0"
-  },
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=18.0.0"
   }
 }

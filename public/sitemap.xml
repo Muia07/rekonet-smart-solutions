@@ -34,7 +34,7 @@
     <loc>https://rekonetsystems.netlify.app/contact</loc>
     <lastmod>2026-08-31</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://rekonetsystems.netlify.app/why-us</loc>
@@ -43,7 +43,7 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://rekonetsystems.netlify.app/testimonials</loc>
+    <loc>https://rekonetsystems.netlify.app/use-cases</loc>
     <lastmod>2026-08-31</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -58,22 +58,10 @@
     <loc>https://rekonetsystems.netlify.app/downloads</loc>
     <lastmod>2026-08-31</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://rekonetsystems.netlify.app/blog</loc>
-    <lastmod>2026-08-31</lastmod>
-    <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://rekonetsystems.netlify.app/pos-system-kenya/</loc>
-    <lastmod>2026-08-31</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://rekonetsystems.netlify.app/pos-system-nairobi/</loc>
     <lastmod>2026-08-31</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
@@ -85,13 +73,13 @@
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://rekonetsystems.netlify.app/mpesa-pos-integration/</loc>
+    <loc>https://rekonetsystems.netlify.app/stock-and-cash-reconciliation-software-kenya/</loc>
     <lastmod>2026-08-31</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://rekonetsystems.netlify.app/stock-and-cash-reconciliation-software-kenya/</loc>
+    <loc>https://rekonetsystems.netlify.app/mpesa-pos-integration/</loc>
     <lastmod>2026-08-31</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
@@ -103,7 +91,43 @@
     <priority>0.9</priority>
   </url>
   <url>
+    <loc>https://rekonetsystems.netlify.app/pos-system-nairobi/</loc>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
     <loc>https://rekonetsystems.netlify.app/pos-system-mombasa/</loc>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://rekonetsystems.netlify.app/website-design-kenya/</loc>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://rekonetsystems.netlify.app/ecommerce-website-development-kenya/</loc>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://rekonetsystems.netlify.app/custom-software-development-kenya/</loc>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://rekonetsystems.netlify.app/privacy-policy/</loc>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://rekonetsystems.netlify.app/terms-of-service/</loc>
     <lastmod>2026-08-31</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
@@ -125,5 +149,53 @@
     <lastmod>2026-08-31</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://rekonetsystems.netlify.app/blog/pos-system-cost-kenya-2026/</loc>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://rekonetsystems.netlify.app/blog/how-to-reconcile-mpesa-and-cash-pos/</loc>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://rekonetsystems.netlify.app/blog/stock-take-and-stock-variance-kenya/</loc>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://rekonetsystems.netlify.app/blog/offline-vs-cloud-pos-kenya/</loc>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://rekonetsystems.netlify.app/blog/pos-hardware-checklist-kenya/</loc>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://rekonetsystems.netlify.app/blog/restaurant-pos-system-kenya/</loc>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://rekonetsystems.netlify.app/blog/etims-and-pos-kenya-questions/</loc>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://rekonetsystems.netlify.app/blog/</loc>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
   </url>
 </urlset>

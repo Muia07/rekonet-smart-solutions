@@ -24,7 +24,6 @@ fs.mkdirSync(dist, { recursive: true });
 const root = path.join(__dirname, "..");
 const entries = [
   "index.html",
-  "rekonet.html",
   "_redirects",
   "public",
   "src/js",
