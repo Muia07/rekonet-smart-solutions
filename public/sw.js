@@ -1,7 +1,7 @@
 // Rekonet Inv Systems Service Worker v6.0
 // HTML, CSS, and JS are always fetched from the network so deploys
 // appear without a hard refresh. Other static assets may be cached.
-const CACHE_NAME = "rekonet-v6";
+const CACHE_NAME = "rekonet-v7";
 const OFFLINE_URLS = ["/", "/index.html"];
 
 function shouldBypassCache(request) {
