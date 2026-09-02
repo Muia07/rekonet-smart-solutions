@@ -62,6 +62,8 @@
 
     <!-- Main stylesheet (hash query added at build time) -->
     <link rel="stylesheet" href="/src/css/rekonet.css" />
+    <!-- Smooth SPA navigation: page transitions + loading feedback -->
+    <link rel="stylesheet" href="/src/css/page-transition.css" />
 
     <!-- DNS Prefetch -->
     <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
@@ -205,6 +207,10 @@
 
     <!-- Load compiled React app -->
     <script type="module" src="/src/js/rekonet.js"></script>
+
+    <!-- Smooth page transitions & loading feedback (runs before the SPA
+         mounts so it can hook the History API first) -->
+    <script src="/src/js/page-transition.js"></script>
 
     <!-- Service Worker: always revalidate so deploys show without a hard refresh -->
     <script>
