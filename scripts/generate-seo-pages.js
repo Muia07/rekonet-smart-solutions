@@ -10,6 +10,64 @@ const {
 const OUT = path.join(__dirname, "..", "public");
 const BASE_URL = CONTACT.baseUrl;
 
+// Posts authored in the Supabase CMS (/admin/blog), cached by scripts/fetch-blog-posts.js.
+function loadDbPosts() {
+  try {
+    const rows = require("./content/blog-posts.json");
+    return Array.isArray(rows) ? rows : [];
+  } catch {
+    return [];
+  }
+}
+
+function stripTags(value = "") {
+  return String(value).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function displayDate(value) {
+  const date = value ? new Date(value) : new Date();
+  return date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+}
+
+function mapDbPost(row) {
+  const published = (row.published_at || row.updated_at || new Date().toISOString()).slice(0, 10);
+  const updated = (row.updated_at || row.published_at || published).slice(0, 10);
+  const description = (row.seo_description || row.excerpt || stripTags(row.content)).slice(0, 300);
+  return {
+    kind: "article",
+    fromCms: true,
+    slug: `blog/${row.slug}`,
+    title: row.seo_title || `${row.title} | Rekonet`,
+    cardTitle: row.title,
+    h1: row.title,
+    description,
+    eyebrow: row.category || "Rekonet guide",
+    lede: row.excerpt || description,
+    category: row.category || "Guides",
+    readTime: String(row.read_time || Math.max(3, Math.round(stripTags(row.content).split(" ").length / 200))),
+    keywords: row.seo_keywords || row.tags || [],
+    image: row.featured_image || "",
+    imageAlt: row.title,
+    imageCaption: "",
+    author: row.author_name || "Rekonet Team",
+    published,
+    updated,
+    displayDate: displayDate(row.published_at || row.updated_at),
+    crumbs:
+      '<a href="/">Home</a> <span aria-hidden="true">›</span> <a href="/blog/">Guides</a> <span aria-hidden="true">›</span> ' +
+      `<span>${escapeHtml(row.title)}</span>`,
+    body: row.content || "",
+  };
+}
+
+const CMS_POSTS = loadDbPosts().map(mapDbPost);
+const STATIC_POSTS = POSTS.map((item) => ({ ...item, kind: "article" }));
+const ALL_POSTS = [
+  ...CMS_POSTS.filter((post) => !STATIC_POSTS.some((item) => item.slug === post.slug)),
+  ...STATIC_POSTS,
+];
+
+
 const org = {
   "@type": "Organization",
   name: "Rekonet Inv Systems",
