@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Contributing guidelines
 - Changelog documentation
 
+### Changed
+- Static SEO/blog pages (`/blog/` and all articles) now share the SPA's chrome: the
+  same 8-link navbar with a "Get a Demo" CTA and mobile menu, the same footer,
+  matching colours and typography, and the WhatsApp float — so moving between
+  blog and app pages feels continuous while the pages stay static HTML for SEO.
+
 ## [2.0.0] - 2026-08-25
 
 ### Added
