@@ -234,7 +234,110 @@ function relatedArticles(post) {
 </aside>`;
 }
 
+// Site chrome shared with the SPA: same 8-link navbar, "Get a Demo" CTA,
+// mobile menu, WhatsApp float and three-column footer. These mirror the
+// React app's navigation and footer components so the blog/SEO pages no
+// longer look like a separate site.
+const NAV_LINKS = [
+  { href: "/", label: "Home", key: "home" },
+  { href: "/about", label: "About", key: "about" },
+  { href: "/services", label: "Services", key: "services" },
+  { href: "/solutions", label: "Solutions", key: "solutions" },
+  { href: "/pricing", label: "Pricing", key: "pricing" },
+  { href: "/blog/", label: "Blog", key: "blog" },
+  { href: "/downloads", label: "Downloads", key: "downloads" },
+  { href: "/contact", label: "Contact", key: "contact" },
+];
+
+function navLink(href, label, key, active) {
+  const isActive = key === active;
+  const current = isActive ? ' aria-current="page"' : "";
+  return `<a href="${href}" class="${isActive ? "active" : ""}"${current}>${label}</a>`;
+}
+
+function siteHeader(active = "") {
+  const desktop = NAV_LINKS.map((l) => navLink(l.href, l.label, l.key, active)).join("");
+  const mobile = NAV_LINKS.map((l) => navLink(l.href, l.label, l.key, active)).join("");
+  return `<header class="site-header">
+  <div class="nav-wrap">
+    <a class="brand" href="/" aria-label="Rekonet home">Rekonet <span>Inv Systems</span></a>
+    <nav class="site-nav" aria-label="Primary navigation">${desktop}</nav>
+    <div class="nav-actions">
+      <a class="btn btn-hero nav-cta" href="/contact">Get a Demo</a>
+    </div>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="mobile-menu" aria-label="Toggle menu">
+      <svg class="icon-open" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="18" x2="20" y2="18"></line></svg>
+      <svg class="icon-close" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    </button>
+  </div>
+  <div class="mobile-menu" id="mobile-menu">
+    <div class="mobile-menu-inner">
+      <div class="mobile-links">${mobile}</div>
+      <div class="mobile-cta">
+        <a class="btn btn-hero" href="/contact">Get a Demo</a>
+      </div>
+    </div>
+  </div>
+</header>`;
+}
+
+function siteFooter() {
+  const year = LAST_UPDATED.slice(0, 4);
+  return `<footer class="site-footer">
+  <div class="footer-wrap">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <h2>Rekonet Inv Systems</h2>
+        <p>Offline-first Windows POS, stock and reconciliation systems, plus websites and scoped business software for Kenyan businesses.</p>
+      </div>
+      <div>
+        <h2>Services</h2>
+        <ul>
+          <li><a href="/pos-system-kenya/">POS scope and pricing</a></li>
+          <li><a href="/use-cases">Practical use cases</a></li>
+          <li><a href="/inventory-management-software-kenya/">Inventory management</a></li>
+          <li><a href="/website-design-kenya/">Business websites</a></li>
+          <li><a href="/custom-software-development-kenya/">Custom software</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>Contact and information</h2>
+        <ul>
+          <li><a href="tel:${CONTACT.phoneMachine}">${CONTACT.phoneDisplay}</a></li>
+          <li><a href="mailto:${CONTACT.email}">${CONTACT.email}</a></li>
+          <li>Nairobi, Kenya</li>
+          <li><a href="/blog/">Practical business guides</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© ${year} Rekonet Inv Systems. Pricing is indicative until confirmed in writing.</p>
+      <p><a href="/privacy-policy/">Privacy policy</a> · <a href="/terms-of-service/">Website terms</a></p>
+    </div>
+  </div>
+</footer>`;
+}
+
+const whatsAppFloat = `<a href="https://wa.me/${CONTACT.whatsApp}?text=Hello%20Rekonet%2C%20I%20would%20like%20to%20discuss%20a%20business%20system." target="_blank" rel="noopener noreferrer" aria-label="Contact Rekonet on WhatsApp" class="whatsapp-float">WhatsApp</a>`;
+
+const mobileMenuScript = `<script>
+(function () {
+  var toggle = document.querySelector(".nav-toggle");
+  var menu = document.getElementById("mobile-menu");
+  if (!toggle || !menu) return;
+  function setOpen(open) {
+    menu.classList.toggle("open", open);
+    toggle.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+  toggle.addEventListener("click", function () { setOpen(!menu.classList.contains("open")); });
+  menu.addEventListener("click", function (e) { if (e.target.closest("a")) setOpen(false); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") setOpen(false); });
+  window.addEventListener("resize", function () { if (window.innerWidth >= 768) setOpen(false); });
+})();
+</script>`;
+
 function page(data) {
+  const navActive = data.kind === "article" || data.slug === "blog" ? "blog" : "";
   const isArticle = data.kind === "article";
   const canonical = `${BASE_URL}/${data.slug ? `${data.slug}/` : ""}`;
   const image = absoluteUrl(data.image || "/og-image.png");
@@ -264,7 +367,7 @@ function page(data) {
       <h2 id="cta-heading">Start with your actual workflow</h2>
       <p>Tell us what you sell, how many tills or branches you run, and what you need to reconcile. We will confirm scope, exclusions, timeline and price in writing.</p>
       <div class="btn-row">
-        <a class="btn btn-primary" href="/contact">Request a demo or quote</a>
+        <a class="btn btn-hero" href="/contact">Request a demo or quote</a>
         <a class="btn btn-ghost" href="https://wa.me/${CONTACT.whatsApp}?text=Hello%20Rekonet%2C%20I%20would%20like%20to%20discuss%20a%20business%20system." rel="noopener">WhatsApp ${CONTACT.phoneDisplay}</a>
       </div>
     </div>
@@ -304,7 +407,7 @@ function page(data) {
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="manifest" href="/site.webmanifest" />
-  <meta name="theme-color" content="#002b5b" />
+  <meta name="theme-color" content="#002e5c" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet" />
@@ -313,18 +416,7 @@ function page(data) {
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to main content</a>
-  <header class="site-header">
-    <div class="wrap">
-      <a class="brand" href="/" aria-label="Rekonet home">Rekonet <span>Inv Systems</span></a>
-      <nav class="site-nav" aria-label="Primary navigation">
-        <a href="/pos-system-kenya/">POS</a>
-        <a href="/inventory-management-software-kenya/">Inventory</a>
-        <a href="/pricing">Pricing</a>
-        <a href="/blog/">Guides</a>
-        <a class="cta" href="/contact">Contact</a>
-      </nav>
-    </div>
-  </header>
+  ${siteHeader(navActive)}
 
   <main id="main-content">
     <section class="hero">
@@ -336,7 +428,7 @@ function page(data) {
           data.hideHeroButtons
             ? ""
             : `<div class="btn-row">
-          <a class="btn btn-primary" href="/contact">Request a scoped quote</a>
+          <a class="btn btn-hero" href="/contact">Request a scoped quote</a>
           <a class="btn btn-ghost" href="/pricing">See pricing and exclusions</a>
         </div>`
         }
@@ -356,37 +448,10 @@ function page(data) {
 
   ${cta}
 
-  <footer class="site-footer">
-    <div class="wrap">
-      <div class="footer-grid">
-        <div>
-          <h2>Rekonet Inv Systems</h2>
-          <p>Offline POS, stock control, reconciliation, websites and scoped business software for Kenyan businesses.</p>
-        </div>
-        <div>
-          <h2>Contact</h2>
-          <ul>
-            <li><a href="tel:${CONTACT.phoneMachine}">${CONTACT.phoneDisplay}</a></li>
-            <li><a href="mailto:${CONTACT.email}">${CONTACT.email}</a></li>
-            <li>Nairobi, Kenya</li>
-          </ul>
-        </div>
-        <div>
-          <h2>Useful links</h2>
-          <ul>
-            <li><a href="/pricing">Pricing and cost notes</a></li>
-            <li><a href="/use-cases">Practical use cases</a></li>
-            <li><a href="/faq">Frequently asked questions</a></li>
-            <li><a href="/downloads">Downloads</a></li>
-            <li><a href="/blog/">Business guides</a></li>
-            <li><a href="/privacy-policy/">Privacy policy</a></li>
-            <li><a href="/terms-of-service/">Website terms</a></li>
-          </ul>
-        </div>
-      </div>
-      <p class="legal">© 2026 Rekonet Inv Systems. Pricing is indicative until confirmed in a written quotation.</p>
-    </div>
-  </footer>
+  ${siteFooter()}
+
+  ${whatsAppFloat}
+  ${mobileMenuScript}
 </body>
 </html>`.replace(/[ \t]+$/gm, "");
 }

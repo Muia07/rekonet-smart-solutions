@@ -32,7 +32,7 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="manifest" href="/site.webmanifest" />
-  <meta name="theme-color" content="#002b5b" />
+  <meta name="theme-color" content="#002e5c" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet" />
@@ -42,17 +42,26 @@
 <body>
   <a class="skip-link" href="#main-content">Skip to main content</a>
   <header class="site-header">
-    <div class="wrap">
-      <a class="brand" href="/" aria-label="Rekonet home">Rekonet <span>Inv Systems</span></a>
-      <nav class="site-nav" aria-label="Primary navigation">
-        <a href="/pos-system-kenya/">POS</a>
-        <a href="/inventory-management-software-kenya/">Inventory</a>
-        <a href="/pricing">Pricing</a>
-        <a href="/blog/">Guides</a>
-        <a class="cta" href="/contact">Contact</a>
-      </nav>
+  <div class="nav-wrap">
+    <a class="brand" href="/" aria-label="Rekonet home">Rekonet <span>Inv Systems</span></a>
+    <nav class="site-nav" aria-label="Primary navigation"><a href="/" class="">Home</a><a href="/about" class="">About</a><a href="/services" class="">Services</a><a href="/solutions" class="">Solutions</a><a href="/pricing" class="">Pricing</a><a href="/blog/" class="">Blog</a><a href="/downloads" class="">Downloads</a><a href="/contact" class="">Contact</a></nav>
+    <div class="nav-actions">
+      <a class="btn btn-hero nav-cta" href="/contact">Get a Demo</a>
     </div>
-  </header>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="mobile-menu" aria-label="Toggle menu">
+      <svg class="icon-open" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="18" x2="20" y2="18"></line></svg>
+      <svg class="icon-close" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    </button>
+  </div>
+  <div class="mobile-menu" id="mobile-menu">
+    <div class="mobile-menu-inner">
+      <div class="mobile-links"><a href="/" class="">Home</a><a href="/about" class="">About</a><a href="/services" class="">Services</a><a href="/solutions" class="">Solutions</a><a href="/pricing" class="">Pricing</a><a href="/blog/" class="">Blog</a><a href="/downloads" class="">Downloads</a><a href="/contact" class="">Contact</a></div>
+      <div class="mobile-cta">
+        <a class="btn btn-hero" href="/contact">Get a Demo</a>
+      </div>
+    </div>
+  </div>
+</header>
 
   <main id="main-content">
     <section class="hero">
@@ -61,7 +70,7 @@
         <h1>OpenPOS download and setup information</h1>
         <p class="lede">Use Rekonet&#039;s Downloads page as the current source for available installers and release details; do not rely on copied files or old links.</p>
         <div class="btn-row">
-          <a class="btn btn-primary" href="/contact">Request a scoped quote</a>
+          <a class="btn btn-hero" href="/contact">Request a scoped quote</a>
           <a class="btn btn-ghost" href="/pricing">See pricing and exclusions</a>
         </div>
       </div>
@@ -121,42 +130,61 @@
       <h2 id="cta-heading">Start with your actual workflow</h2>
       <p>Tell us what you sell, how many tills or branches you run, and what you need to reconcile. We will confirm scope, exclusions, timeline and price in writing.</p>
       <div class="btn-row">
-        <a class="btn btn-primary" href="/contact">Request a demo or quote</a>
+        <a class="btn btn-hero" href="/contact">Request a demo or quote</a>
         <a class="btn btn-ghost" href="https://wa.me/254745522104?text=Hello%20Rekonet%2C%20I%20would%20like%20to%20discuss%20a%20business%20system." rel="noopener">WhatsApp +254 745 522 104</a>
       </div>
     </div>
   </section>
 
   <footer class="site-footer">
-    <div class="wrap">
-      <div class="footer-grid">
-        <div>
-          <h2>Rekonet Inv Systems</h2>
-          <p>Offline POS, stock control, reconciliation, websites and scoped business software for Kenyan businesses.</p>
-        </div>
-        <div>
-          <h2>Contact</h2>
-          <ul>
-            <li><a href="tel:+254745522104">+254 745 522 104</a></li>
-            <li><a href="mailto:rekonetsystems@outlook.com">rekonetsystems@outlook.com</a></li>
-            <li>Nairobi, Kenya</li>
-          </ul>
-        </div>
-        <div>
-          <h2>Useful links</h2>
-          <ul>
-            <li><a href="/pricing">Pricing and cost notes</a></li>
-            <li><a href="/use-cases">Practical use cases</a></li>
-            <li><a href="/faq">Frequently asked questions</a></li>
-            <li><a href="/downloads">Downloads</a></li>
-            <li><a href="/blog/">Business guides</a></li>
-            <li><a href="/privacy-policy/">Privacy policy</a></li>
-            <li><a href="/terms-of-service/">Website terms</a></li>
-          </ul>
-        </div>
+  <div class="footer-wrap">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <h2>Rekonet Inv Systems</h2>
+        <p>Offline-first Windows POS, stock and reconciliation systems, plus websites and scoped business software for Kenyan businesses.</p>
       </div>
-      <p class="legal">© 2026 Rekonet Inv Systems. Pricing is indicative until confirmed in a written quotation.</p>
+      <div>
+        <h2>Services</h2>
+        <ul>
+          <li><a href="/pos-system-kenya/">POS scope and pricing</a></li>
+          <li><a href="/use-cases">Practical use cases</a></li>
+          <li><a href="/inventory-management-software-kenya/">Inventory management</a></li>
+          <li><a href="/website-design-kenya/">Business websites</a></li>
+          <li><a href="/custom-software-development-kenya/">Custom software</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>Contact and information</h2>
+        <ul>
+          <li><a href="tel:+254745522104">+254 745 522 104</a></li>
+          <li><a href="mailto:rekonetsystems@outlook.com">rekonetsystems@outlook.com</a></li>
+          <li>Nairobi, Kenya</li>
+          <li><a href="/blog/">Practical business guides</a></li>
+        </ul>
+      </div>
     </div>
-  </footer>
+    <div class="footer-bottom">
+      <p>© 2026 Rekonet Inv Systems. Pricing is indicative until confirmed in writing.</p>
+      <p><a href="/privacy-policy/">Privacy policy</a> · <a href="/terms-of-service/">Website terms</a></p>
+    </div>
+  </div>
+</footer>
+
+  <a href="https://wa.me/254745522104?text=Hello%20Rekonet%2C%20I%20would%20like%20to%20discuss%20a%20business%20system." target="_blank" rel="noopener noreferrer" aria-label="Contact Rekonet on WhatsApp" class="whatsapp-float">WhatsApp</a>
+  <script>
+(function () {
+  var toggle = document.querySelector(".nav-toggle");
+  var menu = document.getElementById("mobile-menu");
+  if (!toggle || !menu) return;
+  function setOpen(open) {
+    menu.classList.toggle("open", open);
+    toggle.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+  toggle.addEventListener("click", function () { setOpen(!menu.classList.contains("open")); });
+  menu.addEventListener("click", function (e) { if (e.target.closest("a")) setOpen(false); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") setOpen(false); });
+  window.addEventListener("resize", function () { if (window.innerWidth >= 768) setOpen(false); });
+})();
+</script>
 </body>
 </html>
