@@ -25,6 +25,34 @@ This project transforms the Rekonet Systems website from its current state to ma
 
 ---
 
+## 🧾 Invoicing & Receipts Tool
+
+A free, browser-based invoicing tool ships with the site at **`/invoicing/`**
+(`public/invoicing/index.html` + `src/js/invoicing.js` + `src/css/invoicing.css`).
+It has no backend and needs no account — everything is stored in the browser's
+localStorage on the device that uses it.
+
+**Workflow**
+
+1. **Settings** — enter the business name, contacts, KRA PIN, logo, default VAT
+   rate/treatment, invoice & receipt numbering (`INV-0001`, `RCT-0001`) and the
+   payment details that print on every invoice (e.g. M-Pesa Paybill).
+2. **New invoice** — add the client (saved automatically for next time), line
+   items, an optional discount and VAT; the number is assigned on save. Then
+   **Print / Save PDF**, share on **WhatsApp** or **Email**.
+3. **Record payment** — when money arrives (full or partial), record it against
+   the invoice. A numbered **receipt** is created automatically showing the
+   amount in words, previous payments and the remaining balance; print or share
+   it the same way. The invoice status moves through Unpaid → Partially paid →
+   Paid (or Overdue when past the due date).
+4. **Backups** — Settings → *Download backup (JSON)* / *Restore from backup*,
+   plus a CSV export of all invoices for a spreadsheet or accountant.
+
+Run `npm test` to execute the unit tests for the invoicing calculations,
+numbering, statuses and backup import/export.
+
+---
+
 ## 🚀 Key Improvements Implemented
 
 ### 1. **SEO Enhancements**

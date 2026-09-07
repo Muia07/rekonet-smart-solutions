@@ -62,6 +62,19 @@
           "type": "image/png"
         }
       ]
+    },
+    {
+      "name": "Invoicing",
+      "short_name": "Invoices",
+      "description": "Create invoices and issue receipts",
+      "url": "/invoicing/",
+      "icons": [
+        {
+          "src": "/favicon-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
     }
   ]
 }

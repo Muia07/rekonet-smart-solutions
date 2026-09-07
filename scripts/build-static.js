@@ -31,6 +31,15 @@ function bustHtmlAssets(htmlPath, cssHash, jsHash) {
   fs.writeFileSync(htmlPath, html);
 }
 
+// The invoicing tool (public/invoicing/index.html) has its own CSS/JS pair.
+function bustInvoicingAssets(htmlPath, cssHash, jsHash) {
+  if (!fs.existsSync(htmlPath)) return;
+  let html = fs.readFileSync(htmlPath, "utf8");
+  html = html.replace(/\/src\/css\/invoicing\.css(?:\?v=[^"']+)?/g, `/src/css/invoicing.css?v=${cssHash}`);
+  html = html.replace(/\/src\/js\/invoicing\.js(?:\?v=[^"']+)?/g, `/src/js/invoicing.js?v=${jsHash}`);
+  fs.writeFileSync(htmlPath, html);
+}
+
 function walkHtml(dir, visitor) {
   if (!fs.existsSync(dir)) return;
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -59,10 +68,15 @@ for (const entry of entries) {
 const cssHash = fileHash(path.join(root, "src/css/rekonet.css"));
 const jsHash = fileHash(path.join(root, "src/js/rekonet.js"));
 const seoHash = fileHash(path.join(root, "src/css/seo-pages.css"));
+const invoicingCssHash = fileHash(path.join(root, "src/css/invoicing.css"));
+const invoicingJsHash = fileHash(path.join(root, "src/js/invoicing.js"));
 
 bustHtmlAssets(path.join(dist, "index.html"), cssHash, jsHash);
 walkHtml(dist, (htmlPath) => {
   bustHtmlAssets(htmlPath, seoHash, jsHash);
 });
+bustInvoicingAssets(path.join(dist, "invoicing", "index.html"), invoicingCssHash, invoicingJsHash);
 
-console.log(`Static site built into dist/ (css=${cssHash} js=${jsHash} seo=${seoHash})`);
+console.log(
+  `Static site built into dist/ (css=${cssHash} js=${jsHash} seo=${seoHash} invoicing=${invoicingCssHash}/${invoicingJsHash})`
+);

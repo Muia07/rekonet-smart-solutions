@@ -10,7 +10,7 @@
     "build": "node scripts/build-static.js",
     "build:dev": "npm run build",
     "deploy": "npm run build && echo 'Ready for deployment'",
-    "test": "echo 'No tests specified'",
+    "test": "node --test tests/*.test.js",
     "lint": "echo 'No linter configured'",
     "optimize": "node scripts/optimize.js",
     "analyze": "echo 'Run Lighthouse for performance analysis'",

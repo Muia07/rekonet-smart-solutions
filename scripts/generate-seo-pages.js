@@ -307,6 +307,7 @@ function siteFooter() {
           <li><a href="mailto:${CONTACT.email}">${CONTACT.email}</a></li>
           <li>Nairobi, Kenya</li>
           <li><a href="/blog/">Practical business guides</a></li>
+          <li><a href="/invoicing/">Free invoicing &amp; receipts tool</a></li>
         </ul>
       </div>
     </div>
@@ -518,6 +519,7 @@ const staticRoutes = [
   { path: "/use-cases", changefreq: "monthly", priority: "0.7" },
   { path: "/faq", changefreq: "monthly", priority: "0.7" },
   { path: "/downloads", changefreq: "monthly", priority: "0.7" },
+  { path: "/invoicing/", changefreq: "monthly", priority: "0.7" },
   ...all
     .filter((item) => !item.noIndex)
     .map((item) => ({

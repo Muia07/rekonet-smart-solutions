@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en-KE">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Invoicing &amp; Receipts | Rekonet</title>
+  <meta name="description" content="Create professional invoices, record payments and issue numbered receipts. Runs in your browser with no sign-up — print or save as PDF and share on WhatsApp or email." />
+  <meta name="author" content="Rekonet Inv Systems" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://rekonetsystems.netlify.app/invoicing/" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://rekonetsystems.netlify.app/invoicing/" />
+  <meta property="og:title" content="Invoicing &amp; Receipts | Rekonet" />
+  <meta property="og:description" content="Create invoices, record payments and issue numbered receipts. Runs in your browser with no sign-up — print or save as PDF." />
+  <meta property="og:image" content="https://rekonetsystems.netlify.app/og-image.png" />
+  <meta property="og:site_name" content="Rekonet Inv Systems" />
+  <meta property="og:locale" content="en_KE" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Invoicing &amp; Receipts | Rekonet" />
+  <meta name="twitter:description" content="Create invoices, record payments and issue numbered receipts. Runs in your browser with no sign-up — print or save as PDF." />
+  <meta name="twitter:image" content="https://rekonetsystems.netlify.app/og-image.png" />
+
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <meta name="theme-color" content="#002e5c" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/src/css/invoicing.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+
+  <header class="app-header">
+    <div class="app-header-inner">
+      <a class="brand" href="#/invoices" aria-label="Rekonet Invoicing home">
+        <span class="brand-name">Rekonet <span>Invoicing</span></span>
+        <small>Invoices &amp; receipts</small>
+      </a>
+      <nav class="app-nav" aria-label="Invoicing sections">
+        <a href="#/invoices" data-nav="invoices">Invoices</a>
+        <a href="#/receipts" data-nav="receipts">Receipts</a>
+        <a href="#/clients" data-nav="clients">Clients</a>
+        <a href="#/settings" data-nav="settings">Settings</a>
+      </nav>
+      <a class="site-link" href="/">&larr; Main site</a>
+    </div>
+  </header>
+
+  <main id="main-content" class="app-main">
+    <div id="invoicing-app" aria-live="polite">
+      <noscript>
+        <div class="card">
+          <h1>JavaScript is required</h1>
+          <p>The invoicing tool runs entirely in your browser. Please enable JavaScript and reload this page.</p>
+        </div>
+      </noscript>
+    </div>
+  </main>
+
+  <footer class="app-footer">
+    <p>Data is stored in this browser only. Download a backup from <a href="#/settings">Settings</a> regularly. &middot; <a href="/">Rekonet Inv Systems</a></p>
+  </footer>
+
+  <!-- Record payment / issue receipt -->
+  <dialog id="payment-dialog" aria-labelledby="payment-dialog-title">
+    <form class="dialog-body" data-form="payment" method="dialog" novalidate>
+      <h2 id="payment-dialog-title">Record payment</h2>
+      <p class="muted" data-payment-summary></p>
+      <input type="hidden" name="invoice-id" value="" />
+      <div class="form-grid">
+        <label class="field">
+          <span>Amount received <em>*</em></span>
+          <span class="input-with-addon">
+            <span class="addon" data-payment-currency>KES</span>
+            <input name="amount" inputmode="decimal" placeholder="0.00" required />
+          </span>
+        </label>
+        <label class="field">
+          <span>Payment date <em>*</em></span>
+          <input name="date" type="date" required />
+        </label>
+        <label class="field">
+          <span>Method</span>
+          <select name="method">
+            <option>M-Pesa</option>
+            <option>Cash</option>
+            <option>Bank transfer</option>
+            <option>Card</option>
+            <option>Cheque</option>
+            <option>Other</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Reference / transaction code</span>
+          <input name="reference" placeholder="e.g. M-Pesa code" autocapitalize="characters" />
+        </label>
+        <label class="field field-wide">
+          <span>Note (shown on the receipt)</span>
+          <input name="note" placeholder="Optional" />
+        </label>
+      </div>
+      <div class="form-errors" data-errors hidden role="alert"></div>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-ghost" data-dialog-cancel>Cancel</button>
+        <button type="submit" class="btn btn-success">Save payment &amp; create receipt</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Add / edit client -->
+  <dialog id="client-dialog" aria-labelledby="client-dialog-title">
+    <form class="dialog-body" data-form="client" method="dialog" novalidate>
+      <h2 id="client-dialog-title" data-client-title>New client</h2>
+      <input type="hidden" name="client-id" value="" />
+      <div class="form-grid">
+        <label class="field field-wide">
+          <span>Name <em>*</em></span>
+          <input name="client-name" required autocomplete="organization" />
+        </label>
+        <label class="field">
+          <span>Phone</span>
+          <input name="client-phone" type="tel" inputmode="tel" placeholder="07XX XXX XXX" />
+        </label>
+        <label class="field">
+          <span>Email</span>
+          <input name="client-email" type="email" inputmode="email" />
+        </label>
+        <label class="field field-wide">
+          <span>Address</span>
+          <textarea name="client-address" rows="2"></textarea>
+        </label>
+        <label class="field">
+          <span>KRA PIN</span>
+          <input name="client-kra-pin" autocapitalize="characters" />
+        </label>
+      </div>
+      <div class="form-errors" data-errors hidden role="alert"></div>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-ghost" data-dialog-cancel>Cancel</button>
+        <button type="submit" class="btn btn-primary">Save client</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Confirmation -->
+  <dialog id="confirm-dialog" aria-labelledby="confirm-dialog-title">
+    <div class="dialog-body">
+      <h2 id="confirm-dialog-title" data-confirm-title>Are you sure?</h2>
+      <p class="muted" data-confirm-message></p>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-ghost" data-dialog-cancel>Cancel</button>
+        <button type="button" class="btn btn-danger" data-dialog-confirm>Confirm</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div id="toast-region" class="toast-region" role="status" aria-live="polite"></div>
+
+  <script src="/src/js/invoicing.js"></script>
+</body>
+</html>

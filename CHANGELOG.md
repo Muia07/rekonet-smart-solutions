@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Invoicing & receipts tool** at `/invoicing/` (`public/invoicing/index.html`,
+  `src/js/invoicing.js`, `src/css/invoicing.css`). Create numbered invoices with
+  line items, discounts and VAT (added on top, inclusive, or none), record
+  full or partial payments, and issue a numbered receipt for every payment
+  (with the amount in words and running balance). Print / save as PDF, share
+  via WhatsApp or email, track outstanding and overdue balances, save clients,
+  and back up / restore everything as JSON or export invoices to CSV. Data is
+  stored in the browser (localStorage); no account or backend is required.
+- Unit tests for the invoicing logic (`tests/invoicing.test.js`), run with
+  `npm test` via the built-in Node test runner.
 - GitHub Actions CI/CD pipeline
 - Issue templates for bugs and features
 - Contributing guidelines
