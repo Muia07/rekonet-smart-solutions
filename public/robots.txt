@@ -28,6 +28,7 @@ Allow: /faq
 Allow: /use-cases
 Allow: /why-us
 Allow: /downloads
+Allow: /invoicing/
 
 # Google specific directives
 User-agent: Googlebot

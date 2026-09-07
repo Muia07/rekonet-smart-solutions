@@ -25,6 +25,43 @@ This project transforms the Rekonet Systems website from its current state to ma
 
 ---
 
+## 🧾 Quotations, Invoicing & Receipts Tool
+
+A free, browser-based quoting and invoicing tool ships with the site at
+**`/invoicing/`** (`public/invoicing/index.html` + `src/js/invoicing.js` +
+`src/css/invoicing.css`). It has no backend and needs no account — everything
+is stored in the browser's localStorage on the device that uses it.
+
+**Workflow**
+
+1. **Settings** — enter the business name, contacts, KRA PIN, logo, default VAT
+   rate/treatment, quotation, invoice & receipt numbering (`QUO-0001`,
+   `INV-0001`, `RCT-0001`), the default quotation validity period and the
+   payment details that print on every invoice (e.g. M-Pesa Paybill).
+2. **Choose a document** — start with a **New quotation** when the client
+   wants a price first, or a **New invoice** when the sale is agreed. Both use
+   the same editor: client (saved automatically for next time), line items, an
+   optional discount and VAT; the number is assigned on save. Then
+   **Print / Save PDF**, share on **WhatsApp** or **Email**.
+3. **Quotation → invoice** — mark a quotation *accepted* or *declined*; open
+   quotations expire automatically after their *valid until* date. **Convert
+   to invoice** copies every line item onto a new invoice with the next
+   invoice number, dated today with your default payment terms, and locks the
+   quotation with a link to the invoice it became.
+4. **Record payment** — when money arrives (full or partial), record it against
+   the invoice. A numbered **receipt** is created automatically showing the
+   amount in words, previous payments and the remaining balance; print or share
+   it the same way. The invoice status moves through Unpaid → Partially paid →
+   Paid (or Overdue when past the due date).
+5. **Backups** — Settings → *Download backup (JSON)* / *Restore from backup*,
+   plus CSV exports of all invoices and all quotations for a spreadsheet or
+   accountant.
+
+Run `npm test` to execute the unit tests for the calculations, numbering,
+statuses, quotation conversion and backup import/export.
+
+---
+
 ## 🚀 Key Improvements Implemented
 
 ### 1. **SEO Enhancements**
