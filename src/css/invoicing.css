@@ -244,6 +244,11 @@ h1[tabindex="-1"]:focus, h1[tabindex="-1"]:focus-visible { outline: none; }
 .pill-overdue { background: var(--danger-soft); color: var(--danger); }
 .pill-unpaid { background: var(--warn-soft); color: var(--warn); }
 .pill-void { background: var(--surface-2); color: var(--muted); text-decoration: line-through; }
+.pill-quote-open { background: var(--info-soft); color: #075985; }
+.pill-quote-accepted { background: var(--success-soft); color: var(--success); }
+.pill-quote-invoiced { background: var(--accent-soft); color: var(--accent-dark); }
+.pill-quote-expired { background: var(--warn-soft); color: var(--warn); }
+.pill-quote-declined { background: var(--surface-2); color: var(--muted); text-decoration: line-through; }
 
 /* ---------------------------------------------------------------- */
 /* Forms                                                             */
@@ -382,6 +387,8 @@ input[type="file"] { min-height: 0; }
 }
 .doc-stamp-paid { color: var(--success); border-color: var(--success); }
 .doc-stamp-void { color: var(--danger); border-color: var(--danger); }
+.doc-stamp-expired { color: var(--warn); border-color: var(--warn); }
+.doc-quote .doc-type { color: var(--accent-dark); }
 
 /* ---------------------------------------------------------------- */
 /* Dialogs & toasts                                                  */
@@ -471,7 +478,8 @@ dialog:not([open]) { display: none; }
 @media (max-width: 480px) {
   .form-grid, .form-grid-4 { grid-template-columns: 1fr; }
   .app-header-inner { flex-wrap: wrap; padding-bottom: 6px; }
-  .app-nav { margin-left: 0; width: 100%; order: 3; }
+  .app-nav { margin-left: 0; width: 100%; order: 3; gap: 0; flex-wrap: wrap; overflow: visible; }
+  .app-nav a { padding: 8px 9px; font-size: 0.85rem; }
   .site-link { margin-left: auto; }
   .btn-row:not(.btn-row-secondary) .btn { flex: 1 1 auto; }
 }

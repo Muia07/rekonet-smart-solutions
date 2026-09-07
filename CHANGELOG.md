@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Quotations** in the invoicing tool. Choose between a new quotation and a
+  new invoice from the same editor; quotations get their own number sequence
+  (`QUO-0001`), a *valid until* date, print/PDF and WhatsApp/email sharing,
+  and can be marked accepted or declined (open ones expire automatically).
+  **Convert to invoice** copies every line item onto a new, linked invoice
+  dated today with the default payment terms. Quotations are included in
+  backups and have their own CSV export.
 - **Invoicing & receipts tool** at `/invoicing/` (`public/invoicing/index.html`,
   `src/js/invoicing.js`, `src/css/invoicing.css`). Create numbered invoices with
   line items, discounts and VAT (added on top, inclusive, or none), record

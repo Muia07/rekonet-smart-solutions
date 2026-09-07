@@ -307,7 +307,7 @@ function siteFooter() {
           <li><a href="mailto:${CONTACT.email}">${CONTACT.email}</a></li>
           <li>Nairobi, Kenya</li>
           <li><a href="/blog/">Practical business guides</a></li>
-          <li><a href="/invoicing/">Free invoicing &amp; receipts tool</a></li>
+          <li><a href="/invoicing/">Free quotation, invoicing &amp; receipts tool</a></li>
         </ul>
       </div>
     </div>

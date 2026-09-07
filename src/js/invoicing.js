@@ -39,6 +39,13 @@
     paid: "Paid",
     void: "Void",
   };
+  var QUOTE_STATUS_LABELS = {
+    open: "Open",
+    accepted: "Accepted",
+    expired: "Expired",
+    declined: "Declined",
+    invoiced: "Invoiced",
+  };
 
   var DEFAULT_SETTINGS = {
     business: {
@@ -59,12 +66,16 @@
     nextInvoiceNumber: 1,
     receiptPrefix: "RCT-",
     nextReceiptNumber: 1,
+    quotePrefix: "QUO-",
+    nextQuoteNumber: 1,
     numberPadding: 4,
     dueDays: 14,
+    quoteValidDays: 30,
     paymentInstructions:
       "Pay by M-Pesa or bank transfer and quote the invoice number as the payment reference.",
     defaultNotes: "Thank you for your business.",
     defaultTerms: "Payment is due within 14 days of the invoice date.",
+    defaultQuoteTerms: "Prices are valid until the date shown above. Work begins once the quotation is accepted.",
     lastBackupAt: "",
   };
 
@@ -238,6 +249,19 @@
     return STATUS_LABELS[status] || status;
   }
 
+  // Quotation lifecycle: open -> accepted -> invoiced, or open -> declined,
+  // and an open quote silently becomes "expired" once its validity date passes.
+  function deriveQuoteStatus(quote, todayIso) {
+    if (quote.invoiceId) return "invoiced";
+    if (quote.status === "accepted" || quote.status === "declined") return quote.status;
+    if (quote.validUntil && todayIso && quote.validUntil < todayIso) return "expired";
+    return "open";
+  }
+
+  function quoteStatusLabel(status) {
+    return QUOTE_STATUS_LABELS[status] || status;
+  }
+
   function formatNumber(prefix, n, padding) {
     return (prefix || "") + String(Math.max(0, parseInt(n, 10) || 0)).padStart(padding || 4, "0");
   }
@@ -276,6 +300,41 @@
           stats.receivedMonthCount += 1;
         }
       });
+    });
+    return stats;
+  }
+
+  function computeQuoteStats(quotes, todayIso) {
+    var month = String(todayIso || "").slice(0, 7);
+    var stats = {
+      open: 0,
+      openCount: 0,
+      accepted: 0,
+      acceptedCount: 0,
+      invoiced: 0,
+      invoicedCount: 0,
+      quotedMonth: 0,
+      quotedMonthCount: 0,
+    };
+    quotes.forEach(function (q) {
+      var t = computeTotals(q);
+      var st = deriveQuoteStatus(q, todayIso);
+      if (st === "open") {
+        stats.open += t.total;
+        stats.openCount += 1;
+      }
+      if (st === "accepted") {
+        stats.accepted += t.total;
+        stats.acceptedCount += 1;
+      }
+      if (st === "invoiced") {
+        stats.invoiced += t.total;
+        stats.invoicedCount += 1;
+      }
+      if (st !== "declined" && String(q.issueDate || "").slice(0, 7) === month) {
+        stats.quotedMonth += t.total;
+        stats.quotedMonthCount += 1;
+      }
     });
     return stats;
   }
@@ -378,7 +437,7 @@
     }
 
     function freshState() {
-      return { version: VERSION, settings: deepClone(DEFAULT_SETTINGS), clients: [], invoices: [] };
+      return { version: VERSION, settings: deepClone(DEFAULT_SETTINGS), clients: [], invoices: [], quotes: [] };
     }
 
     function normalizeSettings(raw) {
@@ -390,8 +449,10 @@
       if (["exclusive", "inclusive", "none"].indexOf(s.taxMode) < 0) s.taxMode = "exclusive";
       s.nextInvoiceNumber = Math.max(1, parseInt(s.nextInvoiceNumber, 10) || 1);
       s.nextReceiptNumber = Math.max(1, parseInt(s.nextReceiptNumber, 10) || 1);
+      s.nextQuoteNumber = Math.max(1, parseInt(s.nextQuoteNumber, 10) || 1);
       s.numberPadding = clamp(parseInt(s.numberPadding, 10) || 4, 1, 8);
       s.dueDays = clamp(parseInt(s.dueDays, 10) || 0, 0, 365);
+      s.quoteValidDays = clamp(parseInt(s.quoteValidDays, 10) || 0, 0, 365);
       return s;
     }
 
@@ -463,10 +524,42 @@
       if (["exclusive", "inclusive", "none"].indexOf(inv.taxMode) < 0) inv.taxMode = "exclusive";
       inv.taxRate = clamp(Number(inv.taxRate) || 0, 0, 100);
       inv.status = inv.status === "void" ? "void" : "open";
-      ["reference", "notes", "terms", "paymentInstructions"].forEach(function (key) {
+      ["reference", "notes", "terms", "paymentInstructions", "quoteId", "quoteNumber"].forEach(function (key) {
         inv[key] = String(inv[key] == null ? "" : inv[key]);
       });
       return inv;
+    }
+
+    // A quotation shares the invoice's commercial fields (client, items,
+    // discount, tax, notes, terms) but has a validity date instead of a due
+    // date, never carries payments, and remembers the invoice it became.
+    function normalizeQuote(raw) {
+      var source = raw && typeof raw === "object" ? raw : {};
+      var base = normalizeInvoice(Object.assign({}, source, { payments: [], status: "open" }));
+      var quote = {
+        id: base.id,
+        number: base.number,
+        status: "open",
+        currency: base.currency,
+        clientId: base.clientId,
+        client: base.client,
+        issueDate: base.issueDate,
+        validUntil: String(source.validUntil == null ? "" : source.validUntil),
+        reference: base.reference,
+        items: base.items,
+        discount: base.discount,
+        taxMode: base.taxMode,
+        taxRate: base.taxRate,
+        notes: base.notes,
+        terms: base.terms,
+        paymentInstructions: base.paymentInstructions,
+        invoiceId: String(source.invoiceId == null ? "" : source.invoiceId),
+        acceptedAt: String(source.acceptedAt == null ? "" : source.acceptedAt),
+        createdAt: base.createdAt,
+        updatedAt: base.updatedAt,
+      };
+      if (["open", "accepted", "declined"].indexOf(source.status) >= 0) quote.status = source.status;
+      return quote;
     }
 
     function migrate(data) {
@@ -475,6 +568,7 @@
       s.settings = normalizeSettings(data.settings);
       s.clients = (Array.isArray(data.clients) ? data.clients : []).map(normalizeClient);
       s.invoices = (Array.isArray(data.invoices) ? data.invoices : []).map(normalizeInvoice);
+      s.quotes = (Array.isArray(data.quotes) ? data.quotes : []).map(normalizeQuote);
       return s;
     }
 
@@ -549,6 +643,7 @@
       var next = normalizeSettings(merged);
       var nextInvoice = formatNumber(next.invoicePrefix, next.nextInvoiceNumber, next.numberPadding);
       var nextReceipt = formatNumber(next.receiptPrefix, next.nextReceiptNumber, next.numberPadding);
+      var nextQuote = formatNumber(next.quotePrefix, next.nextQuoteNumber, next.numberPadding);
       state.invoices.forEach(function (inv) {
         if (inv.number === nextInvoice) {
           throw new Error("Invoice " + nextInvoice + " already exists. Choose a higher next invoice number.");
@@ -558,6 +653,11 @@
             throw new Error("Receipt " + nextReceipt + " already exists. Choose a higher next receipt number.");
           }
         });
+      });
+      state.quotes.forEach(function (q) {
+        if (q.number === nextQuote) {
+          throw new Error("Quotation " + nextQuote + " already exists. Choose a higher next quotation number.");
+        }
       });
       state.settings = next;
       return persist();
@@ -651,6 +751,14 @@
       state.invoices = state.invoices.filter(function (inv) {
         return inv.id !== id;
       });
+      // A quotation whose invoice was deleted goes back to "accepted" so it
+      // can be invoiced again rather than pointing at a missing record.
+      state.quotes.forEach(function (q) {
+        if (q.invoiceId === id) {
+          q.invoiceId = "";
+          q.updatedAt = stamp();
+        }
+      });
       return persist();
     }
 
@@ -663,6 +771,123 @@
       inv.status = status === "void" ? "void" : "open";
       inv.updatedAt = stamp();
       return persist();
+    }
+
+    /* ---- quotations ---- */
+
+    function listQuotes() {
+      return deepClone(state.quotes).sort(function (a, b) {
+        return (
+          String(b.createdAt || "").localeCompare(String(a.createdAt || "")) ||
+          String(b.number).localeCompare(String(a.number))
+        );
+      });
+    }
+
+    function findQuote(id) {
+      for (var i = 0; i < state.quotes.length; i += 1) {
+        if (state.quotes[i].id === id) return state.quotes[i];
+      }
+      return null;
+    }
+
+    function getQuote(id) {
+      var q = findQuote(id);
+      return q ? deepClone(q) : null;
+    }
+
+    function saveQuote(input) {
+      var draft = normalizeQuote(input);
+      if (!draft.client.name) throw new Error("Client name is required.");
+      var existing = draft.id ? findQuote(draft.id) : null;
+      var client = upsertClient(draft.client);
+      draft.clientId = client.id;
+
+      if (existing) {
+        if (existing.invoiceId) {
+          throw new Error("This quotation has already been invoiced and can no longer be edited.");
+        }
+        Object.assign(existing, draft, {
+          number: existing.number,
+          status: existing.status,
+          invoiceId: existing.invoiceId,
+          acceptedAt: existing.acceptedAt,
+          createdAt: existing.createdAt,
+          updatedAt: stamp(),
+        });
+        persist();
+        return deepClone(existing);
+      }
+
+      var s = state.settings;
+      draft.id = uid();
+      draft.number = formatNumber(s.quotePrefix, s.nextQuoteNumber, s.numberPadding);
+      s.nextQuoteNumber += 1;
+      draft.status = "open";
+      draft.invoiceId = "";
+      draft.acceptedAt = "";
+      draft.createdAt = stamp();
+      draft.updatedAt = draft.createdAt;
+      state.quotes.push(draft);
+      persist();
+      return deepClone(draft);
+    }
+
+    function deleteQuote(id) {
+      state.quotes = state.quotes.filter(function (q) {
+        return q.id !== id;
+      });
+      return persist();
+    }
+
+    function setQuoteStatus(id, status) {
+      var q = findQuote(id);
+      if (!q) return false;
+      if (q.invoiceId) throw new Error("This quotation has been invoiced; its status follows the invoice.");
+      if (["open", "accepted", "declined"].indexOf(status) < 0) status = "open";
+      q.status = status;
+      q.acceptedAt = status === "accepted" ? stamp() : "";
+      q.updatedAt = stamp();
+      return persist();
+    }
+
+    // Turns an accepted (or open) quotation into a real invoice. The invoice
+    // gets the next invoice number and today's date; the quotation is locked
+    // and keeps a pointer to the invoice so the two stay linked.
+    function convertQuoteToInvoice(id) {
+      var q = findQuote(id);
+      if (!q) throw new Error("That quotation no longer exists.");
+      if (q.invoiceId) throw new Error("Quotation " + q.number + " has already been converted to an invoice.");
+      if (q.status === "declined") throw new Error("A declined quotation cannot be invoiced. Reopen it first.");
+      var s = state.settings;
+      var todayIso = today();
+      var invoice = saveInvoice({
+        client: q.client,
+        clientId: q.clientId,
+        currency: q.currency,
+        issueDate: todayIso,
+        dueDate: addDays(todayIso, s.dueDays),
+        reference: q.reference,
+        items: q.items,
+        discount: q.discount,
+        taxMode: q.taxMode,
+        taxRate: q.taxRate,
+        notes: q.notes,
+        terms: s.defaultTerms,
+        paymentInstructions: q.paymentInstructions || s.paymentInstructions,
+        quoteId: q.id,
+        // Snapshot the number so the printed invoice still cites the
+        // quotation even if that quotation is deleted later.
+        quoteNumber: q.number,
+      });
+      q.invoiceId = invoice.id;
+      if (q.status !== "accepted") {
+        q.status = "accepted";
+        q.acceptedAt = stamp();
+      }
+      q.updatedAt = stamp();
+      persist();
+      return invoice;
     }
 
     /* ---- payments & receipts ---- */
@@ -758,6 +983,7 @@
     function summary() {
       return {
         invoices: state.invoices.length,
+        quotes: state.quotes.length,
         clients: state.clients.length,
         receipts: state.invoices.reduce(function (sum, inv) {
           return sum + inv.payments.length;
@@ -803,6 +1029,15 @@
       return persist();
     }
 
+    function csvJoin(head, rows) {
+      return [head]
+        .concat(rows)
+        .map(function (row) {
+          return row.map(csvCell).join(",");
+        })
+        .join("\r\n");
+    }
+
     function toCsv() {
       var todayIso = today();
       var head = [
@@ -817,12 +1052,25 @@
           money.plain(t.tax), money.plain(t.total), money.plain(t.paid), money.plain(t.balance),
         ];
       });
-      return [head]
-        .concat(rows)
-        .map(function (row) {
-          return row.map(csvCell).join(",");
-        })
-        .join("\r\n");
+      return csvJoin(head, rows);
+    }
+
+    function quotesToCsv() {
+      var todayIso = today();
+      var head = [
+        "Quotation", "Status", "Issue date", "Valid until", "Client", "Currency",
+        "Subtotal", "Discount", "Tax", "Total", "Invoice",
+      ];
+      var rows = listQuotes().map(function (q) {
+        var t = computeTotals(q);
+        var inv = q.invoiceId ? getInvoice(q.invoiceId) : null;
+        return [
+          q.number, quoteStatusLabel(deriveQuoteStatus(q, todayIso)), q.issueDate, q.validUntil,
+          q.client.name, q.currency, money.plain(t.subtotal), money.plain(t.discount),
+          money.plain(t.tax), money.plain(t.total), inv ? inv.number : "",
+        ];
+      });
+      return csvJoin(head, rows);
     }
 
     function subscribe(fn) {
@@ -851,6 +1099,12 @@
       saveInvoice: saveInvoice,
       deleteInvoice: deleteInvoice,
       setInvoiceStatus: setInvoiceStatus,
+      listQuotes: listQuotes,
+      getQuote: getQuote,
+      saveQuote: saveQuote,
+      deleteQuote: deleteQuote,
+      setQuoteStatus: setQuoteStatus,
+      convertQuoteToInvoice: convertQuoteToInvoice,
       recordPayment: recordPayment,
       deletePayment: deletePayment,
       listReceipts: listReceipts,
@@ -860,6 +1114,7 @@
       importJson: importJson,
       clearAll: clearAll,
       toCsv: toCsv,
+      quotesToCsv: quotesToCsv,
       subscribe: subscribe,
     };
   }
@@ -878,6 +1133,7 @@
     var lines = [];
     lines.push("Hello " + inv.client.name + ",");
     lines.push("Please find invoice " + inv.number + " from " + settings.business.name + ".");
+    if (inv.quoteNumber) lines.push("It follows quotation " + inv.quoteNumber + ".");
     lines.push("");
     inv.items.slice(0, 6).forEach(function (item) {
       lines.push("• " + item.description + " × " + formatQty(item.qty) + " — " + money.format(lineTotal(item), cur));
@@ -894,6 +1150,24 @@
     }
     lines.push("");
     lines.push("Thank you.");
+    return lines.join("\n");
+  }
+
+  function quoteShareText(quote, settings, totals) {
+    var cur = quote.currency;
+    var lines = [];
+    lines.push("Hello " + quote.client.name + ",");
+    lines.push("Please find quotation " + quote.number + " from " + settings.business.name + ".");
+    lines.push("");
+    quote.items.slice(0, 6).forEach(function (item) {
+      lines.push("• " + item.description + " × " + formatQty(item.qty) + " — " + money.format(lineTotal(item), cur));
+    });
+    if (quote.items.length > 6) lines.push("• …and " + (quote.items.length - 6) + " more");
+    lines.push("");
+    lines.push("Total: " + money.format(totals.total, cur));
+    if (quote.validUntil) lines.push("Valid until: " + formatDate(quote.validUntil));
+    lines.push("");
+    lines.push("Reply to accept and we will send the invoice. Thank you.");
     return lines.join("\n");
   }
 
@@ -962,6 +1236,13 @@
       if (parts[2] === "edit") return { name: "invoice-edit", id: parts[1], query: query };
       if (parts[2] === "duplicate") return { name: "invoice-duplicate", id: parts[1], query: query };
     }
+    if (parts[0] === "quotes") {
+      if (parts.length === 1) return { name: "quotes", query: query };
+      if (parts[1] === "new") return { name: "quote-new", query: query };
+      if (parts.length === 2) return { name: "quote-view", id: parts[1], query: query };
+      if (parts[2] === "edit") return { name: "quote-edit", id: parts[1], query: query };
+      if (parts[2] === "duplicate") return { name: "quote-duplicate", id: parts[1], query: query };
+    }
     if (parts[0] === "receipts") {
       return parts.length === 1
         ? { name: "receipts", query: query }
@@ -978,6 +1259,10 @@
 
   function pill(status) {
     return '<span class="pill pill-' + esc(status) + '">' + esc(statusLabel(status)) + "</span>";
+  }
+
+  function quotePill(status) {
+    return '<span class="pill pill-quote-' + esc(status) + '">' + esc(quoteStatusLabel(status)) + "</span>";
   }
 
   function pageHead(title, subtitle, actionsHtml, backHref, backLabel) {
@@ -1008,10 +1293,11 @@
     );
   }
 
-  function statusFilterOptions(selected) {
+  function statusFilterOptions(selected, labels) {
+    var source = labels || STATUS_LABELS;
     var options = [["all", "All statuses"]].concat(
-      Object.keys(STATUS_LABELS).map(function (key) {
-        return [key, STATUS_LABELS[key]];
+      Object.keys(source).map(function (key) {
+        return [key, source[key]];
       })
     );
     return options
@@ -1118,6 +1404,107 @@
     );
   }
 
+  function filterQuotes(list, filters, todayIso) {
+    var q = String(filters.q || "").trim().toLowerCase();
+    return list.filter(function (quote) {
+      if (filters.status && filters.status !== "all" && deriveQuoteStatus(quote, todayIso) !== filters.status) {
+        return false;
+      }
+      if (!q) return true;
+      return (
+        quote.number.toLowerCase().indexOf(q) >= 0 ||
+        quote.client.name.toLowerCase().indexOf(q) >= 0 ||
+        String(quote.reference || "").toLowerCase().indexOf(q) >= 0
+      );
+    });
+  }
+
+  function quoteRow(quote, todayIso) {
+    var t = computeTotals(quote);
+    var st = deriveQuoteStatus(quote, todayIso);
+    var canConvert = st === "open" || st === "accepted" || st === "expired";
+    var expiry = "";
+    if (st === "expired") expiry = '<span class="sub-text">expired ' + daysBetween(quote.validUntil, todayIso) + " days ago</span>";
+    else if (st === "open" && quote.validUntil) expiry = '<span class="sub-text">' + daysBetween(todayIso, quote.validUntil) + " days left</span>";
+    return (
+      '<tr data-href="#/quotes/' + esc(quote.id) + '">' +
+      '<td><a class="row-link" href="#/quotes/' + esc(quote.id) + '">' + esc(quote.number) + "</a></td>" +
+      "<td>" + esc(quote.client.name) + "</td>" +
+      "<td>" + esc(formatDate(quote.issueDate)) + "</td>" +
+      "<td>" + esc(formatDate(quote.validUntil)) + expiry + "</td>" +
+      '<td class="num">' + esc(money.format(t.total, quote.currency)) + "</td>" +
+      "<td>" + quotePill(st) + "</td>" +
+      '<td class="row-actions">' +
+      (canConvert
+        ? '<button type="button" class="btn btn-sm btn-ghost" data-action="convert-quote" data-id="' + esc(quote.id) + '">Convert to invoice</button>'
+        : st === "invoiced"
+          ? '<a class="btn btn-sm btn-ghost" href="#/invoices/' + esc(quote.invoiceId) + '">View invoice</a>'
+          : "") +
+      "</td></tr>"
+    );
+  }
+
+  function quoteRows(ui) {
+    var todayIso = ui.store.today();
+    var list = filterQuotes(ui.store.listQuotes(), ui.quoteFilters, todayIso);
+    if (!list.length) {
+      return '<tr><td colspan="7" class="table-empty">No quotations match your search.</td></tr>';
+    }
+    return list
+      .map(function (quote) {
+        return quoteRow(quote, todayIso);
+      })
+      .join("");
+  }
+
+  function viewQuotes(ui) {
+    var settings = ui.store.getSettings();
+    var quotes = ui.store.listQuotes();
+    var todayIso = ui.store.today();
+    var newBtn = '<a class="btn btn-primary" href="#/quotes/new">+ New quotation</a>';
+    var subtitle = "Send a price first, then convert the accepted quotation into an invoice in one click.";
+
+    if (!quotes.length) {
+      return (
+        '<section class="page">' +
+        pageHead("Quotations", subtitle, newBtn) +
+        '<div class="onboarding card">' +
+        "<h2>How quotations work</h2>" +
+        '<ol class="steps">' +
+        '<li><strong>Create a quotation</strong> with the client, line items, VAT and a validity date, then print it or share it on WhatsApp. <a href="#/quotes/new">New quotation</a></li>' +
+        "<li><strong>Mark it accepted</strong> when the client says yes — or declined if they don’t go ahead. Open quotations expire automatically after the validity date.</li>" +
+        "<li><strong>Convert it to an invoice.</strong> The invoice copies every line item and gets the next invoice number, and the quotation stays linked to it.</li>" +
+        "</ol>" +
+        '<p class="hint">Quotations use their own number sequence (e.g. ' + esc(formatNumber(settings.quotePrefix, settings.nextQuoteNumber, settings.numberPadding)) + '), so they never consume an invoice number. Change the prefix in <a href="#/settings">Settings</a>.</p>' +
+        "</div></section>"
+      );
+    }
+
+    var stats = computeQuoteStats(quotes, todayIso);
+    var cur = settings.currency;
+    return (
+      '<section class="page">' +
+      pageHead("Quotations", subtitle, newBtn) +
+      '<div class="stats">' +
+      '<div class="stat"><span class="stat-label">Open</span><strong class="stat-value">' + esc(money.format(stats.open, cur)) + '</strong><span class="stat-sub">' + stats.openCount + " awaiting a decision</span></div>" +
+      '<div class="stat stat-success"><span class="stat-label">Accepted</span><strong class="stat-value">' + esc(money.format(stats.accepted, cur)) + '</strong><span class="stat-sub">' + stats.acceptedCount + " ready to invoice</span></div>" +
+      '<div class="stat"><span class="stat-label">Invoiced</span><strong class="stat-value">' + esc(money.format(stats.invoiced, cur)) + '</strong><span class="stat-sub">' + stats.invoicedCount + " converted</span></div>" +
+      '<div class="stat"><span class="stat-label">Quoted this month</span><strong class="stat-value">' + esc(money.format(stats.quotedMonth, cur)) + '</strong><span class="stat-sub">' + stats.quotedMonthCount + " quotation" + (stats.quotedMonthCount === 1 ? "" : "s") + "</span></div>" +
+      "</div>" +
+      '<div class="toolbar">' +
+      '<label class="visually-hidden" for="quote-search">Search quotations</label>' +
+      '<input type="search" id="quote-search" data-filter="quote-q" placeholder="Search by number, client or reference" value="' + esc(ui.quoteFilters.q) + '">' +
+      '<label class="visually-hidden" for="quote-status">Filter by status</label>' +
+      '<select id="quote-status" data-filter="quote-status">' + statusFilterOptions(ui.quoteFilters.status, QUOTE_STATUS_LABELS) + "</select>" +
+      "</div>" +
+      '<div class="table-wrap card"><table class="data-table"><thead><tr>' +
+      "<th>Quotation</th><th>Client</th><th>Issued</th><th>Valid until</th>" +
+      '<th class="num">Total</th><th>Status</th><th><span class="visually-hidden">Actions</span></th>' +
+      '</tr></thead><tbody data-quote-rows>' + quoteRows(ui) + "</tbody></table></div>" +
+      "</section>"
+    );
+  }
+
   function docBrandBlock(business) {
     var contactLine = [business.phone, business.email, business.website].filter(Boolean).map(esc).join(" · ");
     return (
@@ -1145,21 +1532,67 @@
     );
   }
 
+  function docTaxLine(totals, settings, cur) {
+    var taxLabel = settings.taxLabel || "VAT";
+    if (totals.mode === "exclusive" && totals.rate > 0) {
+      return "<div><dt>" + esc(taxLabel) + " " + esc(formatQty(totals.rate)) + "%</dt><dd>" + esc(money.format(totals.tax, cur)) + "</dd></div>";
+    }
+    if (totals.mode === "inclusive" && totals.rate > 0) {
+      return '<div class="doc-subtle"><dt>Includes ' + esc(taxLabel) + " " + esc(formatQty(totals.rate)) + "%</dt><dd>" + esc(money.format(totals.tax, cur)) + "</dd></div>";
+    }
+    return "";
+  }
+
+  function docItemsTable(items) {
+    return (
+      '<table class="doc-items"><thead><tr><th class="col-index">#</th><th>Description</th><th class="num">Qty</th><th class="num">Unit price</th><th class="num">Amount</th></tr></thead><tbody>' +
+      items
+        .map(function (item, i) {
+          return (
+            '<tr><td class="col-index">' + (i + 1) + '</td><td class="pre-line">' + esc(item.description) + "</td>" +
+            '<td class="num">' + esc(formatQty(item.qty)) + '</td><td class="num">' + esc(money.format(item.unitPrice)) + "</td>" +
+            '<td class="num">' + esc(money.format(lineTotal(item))) + "</td></tr>"
+          );
+        })
+        .join("") +
+      "</tbody></table>"
+    );
+  }
+
+  function docTotalsList(doc, settings, totals, extraHtml) {
+    var cur = doc.currency;
+    return (
+      '<dl class="doc-totals">' +
+      "<div><dt>Subtotal</dt><dd>" + esc(money.format(totals.subtotal, cur)) + "</dd></div>" +
+      (totals.discount
+        ? "<div><dt>Discount" + (doc.discount.type === "percent" ? " (" + esc(formatQty(doc.discount.value)) + "%)" : "") + "</dt><dd>-" + esc(money.format(totals.discount, cur)) + "</dd></div>"
+        : "") +
+      docTaxLine(totals, settings, cur) +
+      '<div class="doc-total"><dt>Total</dt><dd>' + esc(money.format(totals.total, cur)) + "</dd></div>" +
+      (extraHtml || "") +
+      "</dl>"
+    );
+  }
+
+  function docFooter(business, message) {
+    return (
+      '<footer class="doc-foot"><p>' + message + '</p><p class="muted">' +
+      [business.name, business.phone, business.email].filter(Boolean).map(esc).join(" · ") +
+      "</p></footer>"
+    );
+  }
+
   function invoiceDocument(inv, settings, totals, status) {
     var b = settings.business;
     var cur = inv.currency;
-    var taxLabel = settings.taxLabel || "VAT";
-    var taxLine = "";
-    if (totals.mode === "exclusive" && totals.rate > 0) {
-      taxLine = "<div><dt>" + esc(taxLabel) + " " + esc(formatQty(totals.rate)) + "%</dt><dd>" + esc(money.format(totals.tax, cur)) + "</dd></div>";
-    } else if (totals.mode === "inclusive" && totals.rate > 0) {
-      taxLine = '<div class="doc-subtle"><dt>Includes ' + esc(taxLabel) + " " + esc(formatQty(totals.rate)) + "%</dt><dd>" + esc(money.format(totals.tax, cur)) + "</dd></div>";
-    }
     var stamp = "";
     if (status === "paid") stamp = '<div class="doc-stamp doc-stamp-paid" aria-hidden="true">Paid</div>';
     if (status === "void") stamp = '<div class="doc-stamp doc-stamp-void" aria-hidden="true">Void</div>';
     var dueLabel = status === "paid" ? "Amount paid" : "Balance due";
     var dueValue = status === "paid" ? totals.paid : totals.balance;
+    var paidRows = totals.paid
+      ? "<div><dt>Paid</dt><dd>-" + esc(money.format(totals.paid, cur)) + '</dd></div><div class="doc-balance"><dt>Balance due</dt><dd>' + esc(money.format(totals.balance, cur)) + "</dd></div>"
+      : "";
 
     return (
       '<article class="doc doc-invoice" aria-label="Invoice ' + esc(inv.number) + '">' + stamp +
@@ -1169,42 +1602,62 @@
       "<div><dt>Date</dt><dd>" + esc(formatDate(inv.issueDate)) + "</dd></div>" +
       "<div><dt>Due</dt><dd>" + esc(formatDate(inv.dueDate)) + "</dd></div>" +
       (inv.reference ? "<div><dt>Reference</dt><dd>" + esc(inv.reference) + "</dd></div>" : "") +
+      (inv.quoteNumber ? "<div><dt>Quotation</dt><dd>" + esc(inv.quoteNumber) + "</dd></div>" : "") +
       "<div><dt>Status</dt><dd>" + esc(statusLabel(status)) + "</dd></div>" +
       "</dl></div></header>" +
       '<section class="doc-parties">' + clientBlock(inv.client, "Bill to") +
       '<div class="doc-party doc-amount-due"><h3>' + dueLabel + '</h3><p class="doc-big">' + esc(money.format(dueValue, cur)) + "</p>" +
       (status !== "paid" && status !== "void" ? '<p class="muted">Due ' + esc(formatDate(inv.dueDate, "long")) + "</p>" : "") +
       "</div></section>" +
-      '<table class="doc-items"><thead><tr><th class="col-index">#</th><th>Description</th><th class="num">Qty</th><th class="num">Unit price</th><th class="num">Amount</th></tr></thead><tbody>' +
-      inv.items
-        .map(function (item, i) {
-          return (
-            '<tr><td class="col-index">' + (i + 1) + '</td><td class="pre-line">' + esc(item.description) + "</td>" +
-            '<td class="num">' + esc(formatQty(item.qty)) + '</td><td class="num">' + esc(money.format(item.unitPrice)) + "</td>" +
-            '<td class="num">' + esc(money.format(lineTotal(item))) + "</td></tr>"
-          );
-        })
-        .join("") +
-      "</tbody></table>" +
+      docItemsTable(inv.items) +
       '<section class="doc-summary"><div class="doc-notes">' +
       (inv.paymentInstructions ? '<h3>Payment details</h3><p class="pre-line">' + esc(inv.paymentInstructions) + "</p>" : "") +
       (inv.notes ? '<h3>Notes</h3><p class="pre-line">' + esc(inv.notes) + "</p>" : "") +
       (inv.terms ? '<h3>Terms</h3><p class="pre-line">' + esc(inv.terms) + "</p>" : "") +
       "</div>" +
-      '<dl class="doc-totals">' +
-      "<div><dt>Subtotal</dt><dd>" + esc(money.format(totals.subtotal, cur)) + "</dd></div>" +
-      (totals.discount
-        ? "<div><dt>Discount" + (inv.discount.type === "percent" ? " (" + esc(formatQty(inv.discount.value)) + "%)" : "") + "</dt><dd>-" + esc(money.format(totals.discount, cur)) + "</dd></div>"
-        : "") +
-      taxLine +
-      '<div class="doc-total"><dt>Total</dt><dd>' + esc(money.format(totals.total, cur)) + "</dd></div>" +
-      (totals.paid
-        ? "<div><dt>Paid</dt><dd>-" + esc(money.format(totals.paid, cur)) + '</dd></div><div class="doc-balance"><dt>Balance due</dt><dd>' + esc(money.format(totals.balance, cur)) + "</dd></div>"
-        : "") +
-      "</dl></section>" +
-      '<footer class="doc-foot"><p>Thank you for your business.</p><p class="muted">' +
-      [b.name, b.phone, b.email].filter(Boolean).map(esc).join(" · ") +
-      "</p></footer></article>"
+      docTotalsList(inv, settings, totals, paidRows) +
+      "</section>" +
+      docFooter(b, "Thank you for your business.") +
+      "</article>"
+    );
+  }
+
+  function quoteDocument(quote, settings, totals, status) {
+    var b = settings.business;
+    var cur = quote.currency;
+    var stamp = "";
+    if (status === "accepted" || status === "invoiced") stamp = '<div class="doc-stamp doc-stamp-paid" aria-hidden="true">Accepted</div>';
+    if (status === "declined") stamp = '<div class="doc-stamp doc-stamp-void" aria-hidden="true">Declined</div>';
+    if (status === "expired") stamp = '<div class="doc-stamp doc-stamp-expired" aria-hidden="true">Expired</div>';
+    var validityNote = quote.validUntil
+      ? '<p class="muted">Valid until ' + esc(formatDate(quote.validUntil, "long")) + "</p>"
+      : "";
+
+    return (
+      '<article class="doc doc-quote" aria-label="Quotation ' + esc(quote.number) + '">' + stamp +
+      '<header class="doc-head">' + docBrandBlock(b) +
+      '<div class="doc-title-block"><h1 class="doc-type">Quotation</h1><p class="doc-number">' + esc(quote.number) + "</p>" +
+      '<dl class="doc-meta">' +
+      "<div><dt>Date</dt><dd>" + esc(formatDate(quote.issueDate)) + "</dd></div>" +
+      (quote.validUntil ? "<div><dt>Valid until</dt><dd>" + esc(formatDate(quote.validUntil)) + "</dd></div>" : "") +
+      (quote.reference ? "<div><dt>Reference</dt><dd>" + esc(quote.reference) + "</dd></div>" : "") +
+      "</dl></div></header>" +
+      '<section class="doc-parties">' + clientBlock(quote.client, "Quotation for") +
+      '<div class="doc-party doc-amount-due"><h3>Quoted total</h3><p class="doc-big">' + esc(money.format(totals.total, cur)) + "</p>" +
+      validityNote +
+      "</div></section>" +
+      docItemsTable(quote.items) +
+      '<section class="doc-summary"><div class="doc-notes">' +
+      (quote.notes ? '<h3>Notes</h3><p class="pre-line">' + esc(quote.notes) + "</p>" : "") +
+      (quote.terms ? '<h3>Terms</h3><p class="pre-line">' + esc(quote.terms) + "</p>" : "") +
+      (quote.paymentInstructions ? '<h3>Payment details</h3><p class="pre-line">' + esc(quote.paymentInstructions) + "</p>" : "") +
+      "</div>" +
+      docTotalsList(quote, settings, totals, "") +
+      "</section>" +
+      '<footer class="doc-foot doc-foot-receipt"><div><p>This is a quotation, not a request for payment.</p>' +
+      '<p class="muted">' + [b.name, b.phone, b.email].filter(Boolean).map(esc).join(" · ") + "</p></div>" +
+      '<div class="signature-line"><span>Accepted by (name, signature &amp; date)</span></div>' +
+      "</footer></article>"
     );
   }
 
@@ -1241,6 +1694,8 @@
     var status = deriveStatus(inv, todayIso);
     var canPay = status !== "paid" && status !== "void";
     var canEdit = inv.payments.length === 0 && status !== "void";
+    var sourceQuote = inv.quoteId ? ui.store.getQuote(inv.quoteId) : null;
+    if (sourceQuote && !inv.quoteNumber) inv.quoteNumber = sourceQuote.number;
     var shareText = invoiceShareText(inv, settings, totals, status);
     var subject = "Invoice " + inv.number + " from " + settings.business.name;
     var lockNote = "";
@@ -1273,11 +1728,73 @@
       '<button type="button" class="btn btn-link btn-danger-text" data-action="delete-invoice" data-id="' + esc(inv.id) + '">Delete</button>' +
       "</div></div>" +
       lockNote +
+      (sourceQuote
+        ? '<p class="notice notice-info no-print">Created from quotation <a href="#/quotes/' + esc(sourceQuote.id) + '">' + esc(sourceQuote.number) + "</a>.</p>"
+        : "") +
       invoiceDocument(inv, settings, totals, status) +
       paymentsTable(inv, canPay) +
       '<p class="hint no-print">Tip: use <strong>Print / Save PDF</strong> and choose “Save as PDF” as the destination, then attach the file when you share it.</p>' +
       "</section>";
     return { html: html, title: inv.number + " · " + inv.client.name };
+  }
+
+  function viewQuote(ui, id) {
+    var quote = ui.store.getQuote(id);
+    if (!quote) return { html: viewNotFound(), title: "Not found" };
+    var settings = ui.store.getSettings();
+    var todayIso = ui.store.today();
+    var totals = computeTotals(quote);
+    var status = deriveQuoteStatus(quote, todayIso);
+    var invoice = quote.invoiceId ? ui.store.getInvoice(quote.invoiceId) : null;
+    var canEdit = status !== "invoiced";
+    var canConvert = status !== "invoiced" && status !== "declined";
+    var shareText = quoteShareText(quote, settings, totals);
+    var subject = "Quotation " + quote.number + " from " + settings.business.name;
+    var note = "";
+    if (status === "invoiced") {
+      note =
+        '<p class="notice notice-info no-print">This quotation was converted to invoice <a href="#/invoices/' + esc(quote.invoiceId) + '">' +
+        esc(invoice ? invoice.number : "") + "</a>" + (quote.acceptedAt ? " (accepted " + esc(formatDate(quote.acceptedAt.slice(0, 10))) + ")" : "") +
+        ". Its details are locked; record payments against the invoice.</p>";
+    } else if (status === "accepted") {
+      note = '<p class="notice notice-info no-print">Accepted' + (quote.acceptedAt ? " on " + esc(formatDate(quote.acceptedAt.slice(0, 10))) : "") + ". Convert it to an invoice when you are ready to bill.</p>";
+    } else if (status === "expired") {
+      note = '<p class="notice notice-warn no-print">This quotation expired on ' + esc(formatDate(quote.validUntil)) + ". Edit it to extend the validity date, or convert it anyway if the client has agreed.</p>";
+    } else if (status === "declined") {
+      note = '<p class="notice notice-warn no-print">Marked as declined. It is kept for your records and excluded from totals.</p>';
+    }
+
+    var statusButtons = "";
+    if (status === "open" || status === "expired") {
+      statusButtons =
+        '<button type="button" class="btn btn-link" data-action="accept-quote" data-id="' + esc(quote.id) + '">Mark accepted</button>' +
+        '<button type="button" class="btn btn-link" data-action="decline-quote" data-id="' + esc(quote.id) + '">Mark declined</button>';
+    } else if (status === "accepted" || status === "declined") {
+      statusButtons = '<button type="button" class="btn btn-link" data-action="reopen-quote" data-id="' + esc(quote.id) + '">Reopen</button>';
+    }
+
+    var html =
+      '<section class="page page-doc">' +
+      '<div class="doc-actions no-print">' +
+      '<a class="back-link" href="#/quotes">&larr; Quotations</a>' +
+      '<div class="btn-row">' +
+      '<button type="button" class="btn btn-primary" data-action="print">Print / Save PDF</button>' +
+      (canConvert ? '<button type="button" class="btn btn-success" data-action="convert-quote" data-id="' + esc(quote.id) + '">Convert to invoice</button>' : "") +
+      (status === "invoiced" ? '<a class="btn btn-success" href="#/invoices/' + esc(quote.invoiceId) + '">View invoice</a>' : "") +
+      '<a class="btn btn-ghost" href="' + esc(whatsAppLink(quote.client.phone, shareText)) + '" target="_blank" rel="noopener noreferrer">Share on WhatsApp</a>' +
+      '<a class="btn btn-ghost" href="' + esc(mailtoLink(quote.client.email, subject, shareText)) + '">Email</a>' +
+      "</div>" +
+      '<div class="btn-row btn-row-secondary">' +
+      (canEdit ? '<a class="btn btn-link" href="#/quotes/' + esc(quote.id) + '/edit">Edit</a>' : "") +
+      '<a class="btn btn-link" href="#/quotes/' + esc(quote.id) + '/duplicate">Duplicate</a>' +
+      statusButtons +
+      '<button type="button" class="btn btn-link btn-danger-text" data-action="delete-quote" data-id="' + esc(quote.id) + '">Delete</button>' +
+      "</div></div>" +
+      note +
+      quoteDocument(quote, settings, totals, status) +
+      '<p class="hint no-print">Tip: when the client agrees, use <strong>Convert to invoice</strong> — every line item is copied across and the invoice gets the next invoice number.</p>' +
+      "</section>";
+    return { html: html, title: quote.number + " · " + quote.client.name };
   }
 
   function receiptDocument(receipt, settings) {
@@ -1374,11 +1891,11 @@
     var invoices = ui.store.listInvoices();
     var settings = ui.store.getSettings();
     var newBtn = '<button type="button" class="btn btn-primary" data-action="new-client">+ New client</button>';
-    var head = pageHead("Clients", "Clients are saved automatically from your invoices. Edits apply to new invoices.", newBtn);
+    var head = pageHead("Clients", "Clients are saved automatically from your invoices and quotations. Edits apply to new documents.", newBtn);
     if (!clients.length) {
       return (
         '<section class="page">' + head +
-        emptyState("No clients yet", "Clients are added automatically when you save an invoice, or you can add one now.", newBtn) +
+        emptyState("No clients yet", "Clients are added automatically when you save an invoice or quotation, or you can add one now.", newBtn) +
         "</section>"
       );
     }
@@ -1398,6 +1915,7 @@
           '<td class="num">' + mine.length + '</td><td class="num">' + esc(money.format(outstanding, settings.currency)) + "</td>" +
           '<td class="row-actions">' +
           '<a class="btn btn-sm btn-ghost" href="#/invoices/new?client=' + encodeURIComponent(c.id) + '">New invoice</a>' +
+          '<a class="btn btn-sm btn-ghost" href="#/quotes/new?client=' + encodeURIComponent(c.id) + '">New quotation</a>' +
           '<button type="button" class="btn btn-sm btn-ghost" data-action="edit-client" data-id="' + esc(c.id) + '">Edit</button>' +
           '<button type="button" class="btn btn-sm btn-ghost btn-danger-text" data-action="delete-client" data-id="' + esc(c.id) + '">Delete</button>' +
           "</td></tr>"
@@ -1452,8 +1970,50 @@
     );
   }
 
-  function newDraft(settings) {
+  // The invoice and quotation editors share one form; KINDS captures the
+  // handful of things that differ (routes, labels, date field, defaults).
+  var KINDS = {
+    invoice: {
+      kind: "invoice",
+      noun: "invoice",
+      Noun: "Invoice",
+      listHash: "#/invoices",
+      listLabel: "Invoices",
+      itemHash: "#/invoices/",
+      dateLabel: "Invoice date",
+      secondDateName: "due-date",
+      secondDateLabel: "Due date",
+      secondDateKey: "dueDate",
+      detailsTitle: "Invoice details",
+      paymentFieldLabel: "Payment details (shown on the invoice)",
+      saveLabel: "Save invoice",
+      afterSaveHint: "You can print or save the PDF after saving.",
+    },
+    quote: {
+      kind: "quote",
+      noun: "quotation",
+      Noun: "Quotation",
+      listHash: "#/quotes",
+      listLabel: "Quotations",
+      itemHash: "#/quotes/",
+      dateLabel: "Quotation date",
+      secondDateName: "valid-until",
+      secondDateLabel: "Valid until",
+      secondDateKey: "validUntil",
+      detailsTitle: "Quotation details",
+      paymentFieldLabel: "Payment details (optional, shown on the quotation)",
+      saveLabel: "Save quotation",
+      afterSaveHint: "After saving you can print it, share it, and convert it to an invoice once accepted.",
+    },
+  };
+
+  function kindFor(route) {
+    return route && route.name.indexOf("quote") === 0 ? KINDS.quote : KINDS.invoice;
+  }
+
+  function newDraft(settings, kind) {
     var todayIso = toIso(new Date());
+    var isQuote = kind && kind.kind === "quote";
     return {
       id: "",
       number: "",
@@ -1462,109 +2022,134 @@
       client: { name: "", email: "", phone: "", address: "", kraPin: "" },
       issueDate: todayIso,
       dueDate: addDays(todayIso, settings.dueDays),
+      validUntil: addDays(todayIso, settings.quoteValidDays),
       reference: "",
       items: [{ description: "", qty: 1, unitPrice: null }],
       discount: { type: "none", value: 0 },
       taxMode: settings.taxMode,
       taxRate: settings.taxRate,
       notes: settings.defaultNotes,
-      terms: settings.defaultTerms,
-      paymentInstructions: settings.paymentInstructions,
+      terms: isQuote ? settings.defaultQuoteTerms : settings.defaultTerms,
+      paymentInstructions: isQuote ? "" : settings.paymentInstructions,
       payments: [],
     };
   }
 
+  function copyCommercialFields(target, source) {
+    target.client = source.client;
+    target.clientId = source.clientId;
+    target.items = source.items;
+    target.discount = source.discount;
+    target.taxMode = source.taxMode;
+    target.taxRate = source.taxRate;
+    target.currency = source.currency;
+    target.notes = source.notes;
+    target.terms = source.terms;
+    target.paymentInstructions = source.paymentInstructions;
+    return target;
+  }
+
+  function lockedView(kind, doc, message) {
+    return (
+      '<section class="page">' +
+      pageHead(kind.Noun + " locked", "", "", kind.itemHash + doc.id, doc.number) +
+      '<p class="notice notice-info">' + message + "</p>" +
+      '<div class="btn-row"><a class="btn btn-primary" href="' + kind.itemHash + esc(doc.id) + '">Back to ' + kind.noun + '</a><a class="btn btn-ghost" href="' + kind.itemHash + esc(doc.id) + '/duplicate">Duplicate</a></div></section>'
+    );
+  }
+
   function viewEditor(ui, route) {
     var settings = ui.store.getSettings();
-    var inv;
+    var kind = kindFor(route);
+    var isQuote = kind.kind === "quote";
+    var get = isQuote ? ui.store.getQuote : ui.store.getInvoice;
+    var nextNumber = isQuote
+      ? formatNumber(settings.quotePrefix, settings.nextQuoteNumber, settings.numberPadding)
+      : formatNumber(settings.invoicePrefix, settings.nextInvoiceNumber, settings.numberPadding);
+    var doc;
     var mode = "new";
-    var headTitle = "New invoice";
-    var subtitle = "Number <strong>" + esc(formatNumber(settings.invoicePrefix, settings.nextInvoiceNumber, settings.numberPadding)) + "</strong> will be assigned when you save.";
+    var headTitle = "New " + kind.noun;
+    var subtitle = "Number <strong>" + esc(nextNumber) + "</strong> will be assigned when you save.";
 
-    if (route.name === "invoice-edit") {
-      inv = ui.store.getInvoice(route.id);
-      if (!inv) return viewNotFound();
-      if (inv.payments.length || inv.status === "void") {
-        return (
-          '<section class="page">' +
-          pageHead("Invoice locked", "", "", "#/invoices/" + inv.id, inv.number) +
-          '<p class="notice notice-info">' +
-          (inv.status === "void"
+    if (route.name === "invoice-edit" || route.name === "quote-edit") {
+      doc = get(route.id);
+      if (!doc) return viewNotFound();
+      if (isQuote && doc.invoiceId) {
+        return lockedView(kind, doc, "This quotation has been converted to an invoice, so its details are locked. Duplicate it to start a new quotation.");
+      }
+      if (!isQuote && (doc.payments.length || doc.status === "void")) {
+        return lockedView(
+          kind,
+          doc,
+          doc.status === "void"
             ? "Void invoices cannot be edited. Reopen it first, or duplicate it into a new invoice."
-            : "This invoice has recorded payments, so its details are locked. Delete the payment(s) from the invoice page to edit it, or duplicate it into a new invoice.") +
-          "</p>" +
-          '<div class="btn-row"><a class="btn btn-primary" href="#/invoices/' + esc(inv.id) + '">Back to invoice</a><a class="btn btn-ghost" href="#/invoices/' + esc(inv.id) + '/duplicate">Duplicate</a></div></section>'
+            : "This invoice has recorded payments, so its details are locked. Delete the payment(s) from the invoice page to edit it, or duplicate it into a new invoice."
         );
       }
       mode = "edit";
-      headTitle = "Edit " + inv.number;
-      subtitle = "Issued " + esc(formatDate(inv.issueDate)) + ". Changes are saved to the same invoice number.";
-    } else if (route.name === "invoice-duplicate") {
-      var source = ui.store.getInvoice(route.id);
+      headTitle = "Edit " + doc.number;
+      subtitle = "Issued " + esc(formatDate(doc.issueDate)) + ". Changes are saved to the same " + kind.noun + " number.";
+    } else if (route.name === "invoice-duplicate" || route.name === "quote-duplicate") {
+      var source = get(route.id);
       if (!source) return viewNotFound();
-      inv = newDraft(settings);
-      inv.client = source.client;
-      inv.clientId = source.clientId;
-      inv.items = source.items;
-      inv.discount = source.discount;
-      inv.taxMode = source.taxMode;
-      inv.taxRate = source.taxRate;
-      inv.currency = source.currency;
-      inv.notes = source.notes;
-      inv.terms = source.terms;
-      inv.paymentInstructions = source.paymentInstructions;
+      doc = copyCommercialFields(newDraft(settings, kind), source);
       subtitle = "Copied from " + esc(source.number) + ". " + subtitle;
     } else {
-      inv = newDraft(settings);
+      doc = newDraft(settings, kind);
       if (route.query && route.query.client) {
         var client = ui.store.getClient(route.query.client);
         if (client) {
-          inv.clientId = client.id;
-          inv.client = { name: client.name, email: client.email, phone: client.phone, address: client.address, kraPin: client.kraPin };
+          doc.clientId = client.id;
+          doc.client = { name: client.name, email: client.email, phone: client.phone, address: client.address, kraPin: client.kraPin };
         }
       }
     }
 
     var clients = ui.store.listClients();
     var taxLabel = settings.taxLabel || "VAT";
-    var discountIsPercent = inv.discount.type === "percent";
-    var discountValue = inv.discount.type === "none" ? "" : discountIsPercent ? formatQty(inv.discount.value) : money.plain(inv.discount.value);
+    var discountIsPercent = doc.discount.type === "percent";
+    var discountValue = doc.discount.type === "none" ? "" : discountIsPercent ? formatQty(doc.discount.value) : money.plain(doc.discount.value);
+    var secondDate = isQuote ? doc.validUntil : doc.dueDate;
 
     return (
-      '<form class="editor" data-form="invoice" data-mode="' + mode + '" data-invoice-id="' + esc(inv.id) + '" novalidate>' +
-      '<input type="hidden" name="client-id" value="' + esc(inv.clientId) + '">' +
-      pageHead(headTitle, subtitle, "", "#/invoices", "Invoices") +
+      '<form class="editor" data-form="invoice" data-kind="' + kind.kind + '" data-mode="' + mode + '" data-invoice-id="' + esc(doc.id) + '" novalidate>' +
+      '<input type="hidden" name="client-id" value="' + esc(doc.clientId) + '">' +
+      pageHead(headTitle, subtitle, "", kind.listHash, kind.listLabel) +
       '<div class="editor-grid"><div class="editor-main">' +
-      '<section class="card"><h2 class="card-title">Bill to</h2><div class="form-grid">' +
-      field("Client name <em>*</em>", input("client-name", inv.client.name, 'list="client-names" required autocomplete="organization" placeholder="Business or person"'), "field-wide") +
-      field("Phone", input("client-phone", inv.client.phone, 'type="tel" inputmode="tel" placeholder="07XX XXX XXX"')) +
-      field("Email", input("client-email", inv.client.email, 'type="email" inputmode="email"')) +
-      field("Address", textarea("client-address", inv.client.address, 2), "field-wide") +
-      field("KRA PIN", input("client-kra-pin", inv.client.kraPin, 'autocapitalize="characters"')) +
+      '<section class="card"><h2 class="card-title">' + (isQuote ? "Quotation for" : "Bill to") + '</h2><div class="form-grid">' +
+      field("Client name <em>*</em>", input("client-name", doc.client.name, 'list="client-names" required autocomplete="organization" placeholder="Business or person"'), "field-wide") +
+      field("Phone", input("client-phone", doc.client.phone, 'type="tel" inputmode="tel" placeholder="07XX XXX XXX"')) +
+      field("Email", input("client-email", doc.client.email, 'type="email" inputmode="email"')) +
+      field("Address", textarea("client-address", doc.client.address, 2), "field-wide") +
+      field("KRA PIN", input("client-kra-pin", doc.client.kraPin, 'autocapitalize="characters"')) +
       "</div>" +
       '<datalist id="client-names">' + clients.map(function (c) { return '<option value="' + esc(c.name) + '"></option>'; }).join("") + "</datalist>" +
       "</section>" +
-      '<section class="card"><h2 class="card-title">Invoice details</h2><div class="form-grid form-grid-4">' +
-      field("Invoice date <em>*</em>", input("issue-date", inv.issueDate, 'type="date" required')) +
-      field("Due date <em>*</em>", input("due-date", inv.dueDate, 'type="date" required')) +
-      field("Reference / PO", input("reference", inv.reference, 'placeholder="Optional"')) +
-      field("Currency", input("currency", inv.currency, 'list="currency-codes" maxlength="3" autocapitalize="characters" class="input-upper"')) +
+      '<section class="card"><h2 class="card-title">' + kind.detailsTitle + '</h2><div class="form-grid form-grid-4">' +
+      field(kind.dateLabel + " <em>*</em>", input("issue-date", doc.issueDate, 'type="date" required')) +
+      field(kind.secondDateLabel + " <em>*</em>", input(kind.secondDateName, secondDate, 'type="date" required')) +
+      field("Reference / PO", input("reference", doc.reference, 'placeholder="Optional"')) +
+      field("Currency", input("currency", doc.currency, 'list="currency-codes" maxlength="3" autocapitalize="characters" class="input-upper"')) +
       "</div>" + currencyDatalist() + "</section>" +
       '<section class="card"><h2 class="card-title">Items</h2>' +
       '<div class="table-wrap"><table class="items-editor"><thead><tr><th>Description</th><th class="col-qty">Qty</th><th class="col-price">Unit price</th><th class="num col-amount">Amount</th><th class="col-remove"><span class="visually-hidden">Remove</span></th></tr></thead>' +
-      '<tbody data-item-rows>' + inv.items.map(itemRowHtml).join("") + "</tbody></table></div>" +
+      '<tbody data-item-rows>' + doc.items.map(itemRowHtml).join("") + "</tbody></table></div>" +
       '<button type="button" class="btn btn-ghost btn-sm" data-action="add-item">+ Add item</button>' +
       "</section>" +
       '<section class="card"><h2 class="card-title">Discount &amp; ' + esc(taxLabel) + '</h2><div class="form-grid form-grid-4">' +
-      field("Discount", select("discount-type", [["none", "None"], ["percent", "Percentage (%)"], ["fixed", "Fixed amount"]], inv.discount.type)) +
-      field("Discount value", input("discount-value", discountValue, 'inputmode="decimal" placeholder="0"' + (inv.discount.type === "none" ? " disabled" : ""))) +
-      field(esc(taxLabel), select("tax-mode", [["exclusive", "Add " + taxLabel + " on top"], ["inclusive", "Prices include " + taxLabel], ["none", "No " + taxLabel]], inv.taxMode)) +
-      field(esc(taxLabel) + " rate (%)", input("tax-rate", formatQty(inv.taxRate), 'type="number" min="0" max="100" step="0.01" inputmode="decimal"' + (inv.taxMode === "none" ? " disabled" : ""))) +
+      field("Discount", select("discount-type", [["none", "None"], ["percent", "Percentage (%)"], ["fixed", "Fixed amount"]], doc.discount.type)) +
+      field("Discount value", input("discount-value", discountValue, 'inputmode="decimal" placeholder="0"' + (doc.discount.type === "none" ? " disabled" : ""))) +
+      field(esc(taxLabel), select("tax-mode", [["exclusive", "Add " + taxLabel + " on top"], ["inclusive", "Prices include " + taxLabel], ["none", "No " + taxLabel]], doc.taxMode)) +
+      field(esc(taxLabel) + " rate (%)", input("tax-rate", formatQty(doc.taxRate), 'type="number" min="0" max="100" step="0.01" inputmode="decimal"' + (doc.taxMode === "none" ? " disabled" : ""))) +
       "</div></section>" +
       '<section class="card"><h2 class="card-title">Notes &amp; terms</h2>' +
-      field("Payment details (shown on the invoice)", textarea("payment-instructions", inv.paymentInstructions, 3)) +
-      field("Notes", textarea("notes", inv.notes, 2)) +
-      field("Terms", textarea("terms", inv.terms, 2)) +
+      (isQuote
+        ? field("Notes", textarea("notes", doc.notes, 2)) +
+          field("Terms", textarea("terms", doc.terms, 2)) +
+          field(kind.paymentFieldLabel, textarea("payment-instructions", doc.paymentInstructions, 2))
+        : field(kind.paymentFieldLabel, textarea("payment-instructions", doc.paymentInstructions, 3)) +
+          field("Notes", textarea("notes", doc.notes, 2)) +
+          field("Terms", textarea("terms", doc.terms, 2))) +
       "</section>" +
       "</div>" +
       '<aside class="editor-side"><div class="card totals-card"><h2 class="card-title">Summary</h2>' +
@@ -1575,9 +2160,9 @@
       '<div class="grand"><dt>Total</dt><dd data-total="total"></dd></div>' +
       "</dl>" +
       '<div class="form-errors" data-errors hidden role="alert"></div>' +
-      '<button type="submit" class="btn btn-primary btn-block">' + (mode === "edit" ? "Save changes" : "Save invoice") + "</button>" +
-      '<a class="btn btn-ghost btn-block" href="' + (mode === "edit" ? "#/invoices/" + esc(inv.id) : "#/invoices") + '">Cancel</a>' +
-      '<p class="hint">You can print or save the PDF after saving.</p>' +
+      '<button type="submit" class="btn btn-primary btn-block">' + (mode === "edit" ? "Save changes" : kind.saveLabel) + "</button>" +
+      '<a class="btn btn-ghost btn-block" href="' + (mode === "edit" ? kind.itemHash + esc(doc.id) : kind.listHash) + '">Cancel</a>' +
+      '<p class="hint">' + kind.afterSaveHint + "</p>" +
       "</div></aside></div></form>"
     );
   }
@@ -1588,9 +2173,10 @@
     var summary = ui.store.summary();
     var nextInvoice = formatNumber(s.invoicePrefix, s.nextInvoiceNumber, s.numberPadding);
     var nextReceipt = formatNumber(s.receiptPrefix, s.nextReceiptNumber, s.numberPadding);
+    var nextQuote = formatNumber(s.quotePrefix, s.nextQuoteNumber, s.numberPadding);
     return (
       '<section class="page">' +
-      pageHead("Settings", "Business details, tax, numbering and defaults used on every invoice and receipt.") +
+      pageHead("Settings", "Business details, tax, numbering and defaults used on every invoice, quotation and receipt.") +
       '<form class="settings" data-form="settings" novalidate><div class="settings-grid">' +
       '<section class="card"><h2 class="card-title">Your business</h2>' +
       '<div class="logo-field"><div class="logo-preview" data-logo-preview>' +
@@ -1598,7 +2184,7 @@
       "</div><div>" +
       '<label class="btn btn-ghost btn-sm btn-file">Upload logo<input type="file" class="visually-hidden" accept="image/png,image/jpeg,image/webp,image/svg+xml" data-action-change="logo-upload"></label> ' +
       (b.logo ? '<button type="button" class="btn btn-ghost btn-sm" data-action="logo-remove">Remove</button>' : "") +
-      '<p class="hint">PNG or JPG. Shown at the top of invoices and receipts.</p>' +
+      '<p class="hint">PNG or JPG. Shown at the top of invoices, quotations and receipts.</p>' +
       '<input type="hidden" name="logo" value="' + esc(b.logo) + '">' +
       "</div></div>" +
       '<div class="form-grid">' +
@@ -1618,34 +2204,39 @@
       "</div>" + currencyDatalist() +
       '<p class="hint">Kenya’s standard VAT rate is 16%. Set the rate to 0 or choose “No tax” if you are not VAT registered.</p>' +
       "</section>" +
-      '<section class="card"><h2 class="card-title">Numbering &amp; due dates</h2><div class="form-grid">' +
+      '<section class="card"><h2 class="card-title">Numbering &amp; dates</h2><div class="form-grid">' +
       field("Invoice prefix", input("invoice-prefix", s.invoicePrefix, "")) +
       field("Next invoice number", input("next-invoice-number", s.nextInvoiceNumber, 'type="number" min="1" step="1"')) +
       field("Receipt prefix", input("receipt-prefix", s.receiptPrefix, "")) +
       field("Next receipt number", input("next-receipt-number", s.nextReceiptNumber, 'type="number" min="1" step="1"')) +
+      field("Quotation prefix", input("quote-prefix", s.quotePrefix, "")) +
+      field("Next quotation number", input("next-quote-number", s.nextQuoteNumber, 'type="number" min="1" step="1"')) +
       field("Number padding (digits)", input("number-padding", s.numberPadding, 'type="number" min="1" max="8" step="1"')) +
       field("Default payment terms (days)", input("due-days", s.dueDays, 'type="number" min="0" max="365" step="1"')) +
+      field("Quotation validity (days)", input("quote-valid-days", s.quoteValidDays, 'type="number" min="0" max="365" step="1"')) +
       "</div>" +
-      '<p class="hint">Next: <strong>' + esc(nextInvoice) + "</strong> and <strong>" + esc(nextReceipt) + "</strong>.</p>" +
+      '<p class="hint">Next: <strong>' + esc(nextInvoice) + "</strong>, <strong>" + esc(nextQuote) + "</strong> and <strong>" + esc(nextReceipt) + "</strong>.</p>" +
       "</section>" +
-      '<section class="card"><h2 class="card-title">Defaults for new invoices</h2>' +
-      field("Payment details", textarea("payment-instructions", s.paymentInstructions, 3)) +
+      '<section class="card"><h2 class="card-title">Defaults for new documents</h2>' +
+      field("Payment details (invoices)", textarea("payment-instructions", s.paymentInstructions, 3)) +
       field("Notes", textarea("default-notes", s.defaultNotes, 2)) +
-      field("Terms", textarea("default-terms", s.defaultTerms, 2)) +
+      field("Invoice terms", textarea("default-terms", s.defaultTerms, 2)) +
+      field("Quotation terms", textarea("default-quote-terms", s.defaultQuoteTerms, 2)) +
       "</section>" +
       "</div>" +
       '<div class="form-errors" data-errors hidden role="alert"></div>' +
       '<div class="form-actions"><button type="submit" class="btn btn-primary">Save settings</button></div>' +
       "</form>" +
       '<section class="card backup-card"><h2 class="card-title">Backup &amp; data</h2>' +
-      "<p>Your data is stored only in this browser on this device — " + summary.invoices + " invoice" + (summary.invoices === 1 ? "" : "s") + ", " + summary.receipts + " receipt" + (summary.receipts === 1 ? "" : "s") + " and " + summary.clients + " client" + (summary.clients === 1 ? "" : "s") + ". Clearing browser data or switching devices will not carry it over, so download a backup regularly.</p>" +
+      "<p>Your data is stored only in this browser on this device — " + summary.invoices + " invoice" + (summary.invoices === 1 ? "" : "s") + ", " + summary.quotes + " quotation" + (summary.quotes === 1 ? "" : "s") + ", " + summary.receipts + " receipt" + (summary.receipts === 1 ? "" : "s") + " and " + summary.clients + " client" + (summary.clients === 1 ? "" : "s") + ". Clearing browser data or switching devices will not carry it over, so download a backup regularly.</p>" +
       '<p class="hint">Last backup: <strong>' + (s.lastBackupAt ? esc(new Date(s.lastBackupAt).toLocaleString("en-GB")) : "never") + "</strong></p>" +
       '<div class="btn-row">' +
       '<button type="button" class="btn btn-primary" data-action="export-json">Download backup (JSON)</button>' +
       '<label class="btn btn-ghost btn-file">Restore from backup<input type="file" class="visually-hidden" accept="application/json,.json" data-action-change="import-json"></label>' +
       '<button type="button" class="btn btn-ghost" data-action="export-csv">Export invoices (CSV)</button>' +
+      '<button type="button" class="btn btn-ghost" data-action="export-quotes-csv">Export quotations (CSV)</button>' +
       "</div>" +
-      '<details class="danger-zone"><summary>Danger zone</summary><p>Permanently delete all invoices, receipts, clients and settings from this browser.</p>' +
+      '<details class="danger-zone"><summary>Danger zone</summary><p>Permanently delete all invoices, quotations, receipts, clients and settings from this browser.</p>' +
       '<button type="button" class="btn btn-danger" data-action="clear-all">Delete all data</button></details>' +
       "</section></section>"
     );
@@ -1774,6 +2365,7 @@
   function updateNav(ui, route) {
     var section = route.name.split("-")[0];
     if (section === "invoice") section = "invoices";
+    if (section === "quote") section = "quotes";
     if (section === "receipt") section = "receipts";
     ui.doc.querySelectorAll("[data-nav]").forEach(function (link) {
       var active = link.getAttribute("data-nav") === section;
@@ -1805,6 +2397,21 @@
         break;
       case "invoice-view":
         result = viewInvoice(ui, route.id);
+        html = result.html;
+        title = result.title;
+        break;
+      case "quotes":
+        html = viewQuotes(ui);
+        title = "Quotations";
+        break;
+      case "quote-new":
+      case "quote-edit":
+      case "quote-duplicate":
+        html = viewEditor(ui, route);
+        title = route.name === "quote-edit" ? "Edit quotation" : "New quotation";
+        break;
+      case "quote-view":
+        result = viewQuote(ui, route.id);
         html = result.html;
         title = result.title;
         break;
@@ -1878,6 +2485,7 @@
     if (discountType === "fixed") discountValue = discountRaw === "" ? 0 : money.toCents(discountRaw);
     return {
       id: form.getAttribute("data-invoice-id") || "",
+      kind: form.getAttribute("data-kind") || "invoice",
       clientId: val("client-id"),
       client: {
         name: val("client-name").trim(),
@@ -1888,6 +2496,7 @@
       },
       issueDate: val("issue-date"),
       dueDate: val("due-date"),
+      validUntil: val("valid-until"),
       reference: val("reference").trim(),
       currency: (val("currency").trim().toUpperCase() || ui.store.getSettings().currency),
       items: items,
@@ -1902,11 +2511,19 @@
 
   function validateInvoice(draft) {
     var errors = [];
+    var isQuote = draft.kind === "quote";
     if (!draft.client.name) errors.push("Enter the client’s name.");
-    if (!parseIso(draft.issueDate)) errors.push("Enter a valid invoice date.");
-    if (!parseIso(draft.dueDate)) errors.push("Enter a valid due date.");
-    if (parseIso(draft.issueDate) && parseIso(draft.dueDate) && draft.dueDate < draft.issueDate) {
-      errors.push("The due date cannot be before the invoice date.");
+    if (!parseIso(draft.issueDate)) errors.push("Enter a valid " + (isQuote ? "quotation" : "invoice") + " date.");
+    if (isQuote) {
+      if (!parseIso(draft.validUntil)) errors.push("Enter a valid “valid until” date.");
+      if (parseIso(draft.issueDate) && parseIso(draft.validUntil) && draft.validUntil < draft.issueDate) {
+        errors.push("The “valid until” date cannot be before the quotation date.");
+      }
+    } else {
+      if (!parseIso(draft.dueDate)) errors.push("Enter a valid due date.");
+      if (parseIso(draft.issueDate) && parseIso(draft.dueDate) && draft.dueDate < draft.issueDate) {
+        errors.push("The due date cannot be before the invoice date.");
+      }
     }
     if (!/^[A-Z]{3}$/.test(draft.currency)) errors.push("Currency must be a 3-letter code such as KES.");
     if (!draft.items.length) errors.push("Add at least one line item.");
@@ -2018,12 +2635,13 @@
       if (errorBox) errorBox.scrollIntoView({ block: "nearest" });
       return;
     }
+    var isQuote = draft.kind === "quote";
     try {
-      var saved = ui.store.saveInvoice(draft);
-      toast(ui, "Invoice " + saved.number + " saved.", "success");
-      ui.win.location.hash = "#/invoices/" + saved.id;
+      var saved = isQuote ? ui.store.saveQuote(draft) : ui.store.saveInvoice(draft);
+      toast(ui, (isQuote ? "Quotation " : "Invoice ") + saved.number + " saved.", "success");
+      ui.win.location.hash = (isQuote ? "#/quotes/" : "#/invoices/") + saved.id;
     } catch (e) {
-      showErrors(errorBox, [e.message || "Could not save the invoice."]);
+      showErrors(errorBox, [e.message || "Could not save the " + (isQuote ? "quotation." : "invoice.")]);
     }
   }
 
@@ -2140,6 +2758,7 @@
     if (!(rate >= 0 && rate <= 100)) errors.push("Tax rate must be between 0 and 100.");
     if (!(parseInt(v("next-invoice-number"), 10) >= 1)) errors.push("Next invoice number must be 1 or more.");
     if (!(parseInt(v("next-receipt-number"), 10) >= 1)) errors.push("Next receipt number must be 1 or more.");
+    if (!(parseInt(v("next-quote-number"), 10) >= 1)) errors.push("Next quotation number must be 1 or more.");
     var errorBox = form.querySelector("[data-errors]");
     showErrors(errorBox, errors);
     if (errors.length) return;
@@ -2164,11 +2783,15 @@
       nextInvoiceNumber: parseInt(v("next-invoice-number"), 10),
       receiptPrefix: v("receipt-prefix"),
       nextReceiptNumber: parseInt(v("next-receipt-number"), 10),
+      quotePrefix: v("quote-prefix"),
+      nextQuoteNumber: parseInt(v("next-quote-number"), 10),
       numberPadding: parseInt(v("number-padding"), 10),
       dueDays: parseInt(v("due-days"), 10),
+      quoteValidDays: parseInt(v("quote-valid-days"), 10),
       paymentInstructions: v("payment-instructions"),
       defaultNotes: v("default-notes"),
       defaultTerms: v("default-terms"),
+      defaultQuoteTerms: v("default-quote-terms"),
       });
     } catch (e) {
       showErrors(errorBox, [e.message || "Could not save settings."]);
@@ -2260,7 +2883,7 @@
         if (!ok) return;
         try {
           var summary = ui.store.importJson(text);
-          toast(ui, "Restored " + summary.invoices + " invoices, " + summary.receipts + " receipts and " + summary.clients + " clients.", "success", 6000);
+          toast(ui, "Restored " + summary.invoices + " invoices, " + summary.quotes + " quotations, " + summary.receipts + " receipts and " + summary.clients + " clients.", "success", 6000);
           ui.win.location.hash = "#/invoices";
           render(ui);
         } catch (e) {
@@ -2359,10 +2982,84 @@
       case "export-csv":
         download(ui, "rekonet-invoices-" + ui.store.today() + ".csv", "\ufeff" + ui.store.toCsv(), "text/csv;charset=utf-8");
         break;
+      case "export-quotes-csv":
+        download(ui, "rekonet-quotations-" + ui.store.today() + ".csv", "\ufeff" + ui.store.quotesToCsv(), "text/csv;charset=utf-8");
+        break;
+      case "accept-quote":
+        try {
+          ui.store.setQuoteStatus(id, "accepted");
+          toast(ui, "Quotation marked as accepted.", "success");
+          render(ui);
+        } catch (e) {
+          toast(ui, e.message, "error");
+        }
+        break;
+      case "decline-quote":
+        try {
+          ui.store.setQuoteStatus(id, "declined");
+          toast(ui, "Quotation marked as declined.");
+          render(ui);
+        } catch (e) {
+          toast(ui, e.message, "error");
+        }
+        break;
+      case "reopen-quote":
+        try {
+          ui.store.setQuoteStatus(id, "open");
+          toast(ui, "Quotation reopened.");
+          render(ui);
+        } catch (e) {
+          toast(ui, e.message, "error");
+        }
+        break;
+      case "convert-quote": {
+        var quote = ui.store.getQuote(id);
+        if (!quote) return;
+        var quoteTotals = computeTotals(quote);
+        var nextInv = (function (s) { return formatNumber(s.invoicePrefix, s.nextInvoiceNumber, s.numberPadding); })(ui.store.getSettings());
+        confirmAction(ui, {
+          title: "Convert " + quote.number + " to an invoice?",
+          message:
+            "Invoice " + nextInv + " for " + money.format(quoteTotals.total, quote.currency) + " will be created for " + quote.client.name +
+            " with today’s date and your default payment terms. The quotation will be marked accepted and locked.",
+          confirmLabel: "Create invoice",
+          danger: false,
+        }).then(function (ok) {
+          if (!ok) return;
+          try {
+            var created = ui.store.convertQuoteToInvoice(id);
+            toast(ui, "Invoice " + created.number + " created from " + quote.number + ".", "success", 6000);
+            ui.win.location.hash = "#/invoices/" + created.id;
+            render(ui);
+          } catch (e) {
+            toast(ui, e.message || "The quotation could not be converted.", "error", 7000);
+          }
+        });
+        break;
+      }
+      case "delete-quote": {
+        var q = ui.store.getQuote(id);
+        if (!q) return;
+        confirmAction(ui, {
+          title: "Delete " + q.number + "?",
+          message: q.invoiceId
+            ? "This permanently deletes the quotation. The invoice created from it is kept."
+            : "This permanently deletes the quotation. Marking it declined keeps it for your records instead.",
+          confirmLabel: "Delete permanently",
+          danger: true,
+        }).then(function (ok) {
+          if (!ok) return;
+          ui.store.deleteQuote(id);
+          toast(ui, "Quotation " + q.number + " deleted.");
+          ui.win.location.hash = "#/quotes";
+          render(ui);
+        });
+        break;
+      }
       case "clear-all":
         confirmAction(ui, {
           title: "Delete all data?",
-          message: "Every invoice, receipt, client and setting stored in this browser will be permanently deleted. Download a backup first if you might need them.",
+          message: "Every invoice, quotation, receipt, client and setting stored in this browser will be permanently deleted. Download a backup first if you might need them.",
           confirmLabel: "Delete everything",
           danger: true,
         }).then(function (ok) {
@@ -2446,6 +3143,11 @@
         var body = app.querySelector("[data-invoice-rows]");
         if (body) body.innerHTML = invoiceRows(ui);
       }
+      if (target && target.getAttribute && target.getAttribute("data-filter") === "quote-q") {
+        ui.quoteFilters.q = target.value;
+        var quoteBody = app.querySelector("[data-quote-rows]");
+        if (quoteBody) quoteBody.innerHTML = quoteRows(ui);
+      }
     });
 
     app.addEventListener("change", function (e) {
@@ -2464,6 +3166,12 @@
         ui.filters.status = target.value;
         var body = app.querySelector("[data-invoice-rows]");
         if (body) body.innerHTML = invoiceRows(ui);
+        return;
+      }
+      if (target.getAttribute("data-filter") === "quote-status") {
+        ui.quoteFilters.status = target.value;
+        var quoteBody = app.querySelector("[data-quote-rows]");
+        if (quoteBody) quoteBody.innerHTML = quoteRows(ui);
         return;
       }
       var editor = closest(target, 'form[data-form="invoice"]');
@@ -2520,6 +3228,7 @@
       route: null,
       lastHash: null,
       filters: { q: "", status: "all" },
+      quoteFilters: { q: "", status: "all" },
       confirmResolver: null,
     };
     bindEvents(ui);
@@ -2544,8 +3253,11 @@
     lineTotal: lineTotal,
     computeTotals: computeTotals,
     computeStats: computeStats,
+    computeQuoteStats: computeQuoteStats,
     deriveStatus: deriveStatus,
+    deriveQuoteStatus: deriveQuoteStatus,
     statusLabel: statusLabel,
+    quoteStatusLabel: quoteStatusLabel,
     formatNumber: formatNumber,
     amountInWords: amountInWords,
     integerToWords: integerToWords,
@@ -2555,6 +3267,7 @@
     addDays: addDays,
     daysBetween: daysBetween,
     invoiceShareText: invoiceShareText,
+    quoteShareText: quoteShareText,
     receiptShareText: receiptShareText,
     createStore: createStore,
     memoryStorage: memoryStorage,

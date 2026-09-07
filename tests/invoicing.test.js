@@ -5,7 +5,7 @@ const assert = require("node:assert/strict");
 const path = require("path");
 
 const api = require(path.join(__dirname, "..", "src", "js", "invoicing.js"));
-const { money, computeTotals, deriveStatus, amountInWords, createStore, memoryStorage } = api;
+const { money, computeTotals, deriveStatus, deriveQuoteStatus, amountInWords, createStore, memoryStorage } = api;
 
 const FIXED_NOW = () => new Date(2026, 8, 7, 10, 30); // 7 Sept 2026
 
@@ -209,7 +209,7 @@ test("backup export/import round-trips and rejects foreign files", () => {
 
   const fresh = newStore();
   const summary = fresh.importJson(json);
-  assert.deepEqual(summary, { invoices: 1, clients: 1, receipts: 1 });
+  assert.deepEqual(summary, { invoices: 1, quotes: 0, clients: 1, receipts: 1 });
   assert.equal(fresh.getSettings().business.name, "Mama Njeri Traders");
   assert.equal(fresh.getInvoice(inv.id).payments.length, 1);
 
@@ -282,4 +282,126 @@ test("share text summarises invoice and receipt for WhatsApp/email", () => {
   assert.match(rText, /payment of KES 1,000\.00 \(M-Pesa, ref ABC\)/);
   assert.match(rText, /Receipt: RCT-0001 · Invoice: INV-0001/);
   assert.match(rText, /Balance due: KES 41,001\.00/);
+});
+
+/* ---- quotations ---- */
+
+function sampleQuote(overrides) {
+  const q = sampleInvoice(overrides);
+  delete q.dueDate;
+  q.validUntil = (overrides && overrides.validUntil) || "2026-10-01";
+  return q;
+}
+
+test("quotations get their own number sequence and never consume invoice numbers", () => {
+  const store = newStore();
+  const q1 = store.saveQuote(sampleQuote());
+  const q2 = store.saveQuote(sampleQuote({ client: { name: "Wanjiru Pharmacy" } }));
+  assert.equal(q1.number, "QUO-0001");
+  assert.equal(q2.number, "QUO-0002");
+  assert.equal(q1.status, "open");
+  assert.equal(q1.validUntil, "2026-10-01");
+  assert.equal(q1.payments, undefined, "quotations carry no payments");
+  const inv = store.saveInvoice(sampleInvoice());
+  assert.equal(inv.number, "INV-0001", "invoice numbering is unaffected by quotations");
+  assert.equal(store.getSettings().nextQuoteNumber, 3);
+  assert.equal(store.listClients().length, 2, "quotation clients are saved like invoice clients");
+  assert.throws(() => store.saveSettings({ nextQuoteNumber: 1 }), /QUO-0001 already exists/);
+});
+
+test("quotation status is derived: open, expired after validity date, accepted/declined by hand", () => {
+  const store = newStore(); // today = 2026-09-07
+  const q = store.saveQuote(sampleQuote({ validUntil: "2026-09-20" }));
+  assert.equal(deriveQuoteStatus(q, "2026-09-07"), "open");
+  assert.equal(deriveQuoteStatus(q, "2026-09-21"), "expired");
+  store.setQuoteStatus(q.id, "accepted");
+  const accepted = store.getQuote(q.id);
+  assert.equal(deriveQuoteStatus(accepted, "2026-12-01"), "accepted", "an accepted quote does not expire");
+  assert.ok(accepted.acceptedAt);
+  store.setQuoteStatus(q.id, "declined");
+  assert.equal(deriveQuoteStatus(store.getQuote(q.id), "2026-09-07"), "declined");
+  store.setQuoteStatus(q.id, "open");
+  assert.equal(store.getQuote(q.id).acceptedAt, "");
+  assert.equal(deriveQuoteStatus(store.getQuote(q.id), "2026-09-07"), "open");
+});
+
+test("converting a quotation creates a linked invoice with the same items and locks the quotation", () => {
+  const store = newStore();
+  store.saveSettings({ dueDays: 7, paymentInstructions: "Paybill 400200" });
+  const q = store.saveQuote(sampleQuote({ discount: { type: "percent", value: 10 }, reference: "PO-77" }));
+  const quoteTotal = computeTotals(q).total;
+
+  const inv = store.convertQuoteToInvoice(q.id);
+  assert.equal(inv.number, "INV-0001");
+  assert.equal(inv.issueDate, "2026-09-07", "invoice is dated today");
+  assert.equal(inv.dueDate, "2026-09-14", "due date uses the default payment terms");
+  assert.equal(inv.reference, "PO-77");
+  assert.equal(inv.quoteNumber, "QUO-0001", "invoice remembers which quotation it came from");
+  assert.equal(inv.paymentInstructions, "Paybill 400200", "payment details fall back to settings");
+  assert.deepEqual(inv.items, q.items);
+  assert.deepEqual(inv.discount, q.discount);
+  assert.equal(computeTotals(inv).total, quoteTotal, "invoice total matches the quotation");
+  assert.equal(inv.quoteId, q.id);
+  assert.equal(deriveStatus(inv, "2026-09-07"), "unpaid");
+
+  const after = store.getQuote(q.id);
+  assert.equal(after.invoiceId, inv.id);
+  assert.equal(after.status, "accepted", "converting an open quote marks it accepted");
+  assert.equal(deriveQuoteStatus(after, "2026-09-07"), "invoiced");
+  assert.throws(() => store.convertQuoteToInvoice(q.id), /already been converted/);
+  assert.throws(() => store.saveQuote(Object.assign({}, after, { reference: "changed" })), /already been invoiced/);
+  assert.throws(() => store.setQuoteStatus(q.id, "declined"), /follows the invoice/);
+
+  // Deleting the invoice releases the quotation so it can be invoiced again.
+  store.deleteInvoice(inv.id);
+  const released = store.getQuote(q.id);
+  assert.equal(released.invoiceId, "");
+  assert.equal(deriveQuoteStatus(released, "2026-09-07"), "accepted");
+  const again = store.convertQuoteToInvoice(q.id);
+  assert.equal(again.number, "INV-0002");
+});
+
+test("declined quotations cannot be converted, and quotation edits keep the number", () => {
+  const store = newStore();
+  const q = store.saveQuote(sampleQuote());
+  store.setQuoteStatus(q.id, "declined");
+  assert.throws(() => store.convertQuoteToInvoice(q.id), /declined quotation cannot be invoiced/);
+  const edited = store.saveQuote(Object.assign({}, store.getQuote(q.id), { validUntil: "2026-12-31", reference: "R2" }));
+  assert.equal(edited.number, "QUO-0001");
+  assert.equal(edited.status, "declined", "editing does not change the status");
+  assert.equal(edited.validUntil, "2026-12-31");
+  store.deleteQuote(q.id);
+  assert.equal(store.getQuote(q.id), null);
+  assert.equal(store.listQuotes().length, 0);
+});
+
+test("quotations survive backup round-trips and export to CSV", () => {
+  const store = newStore();
+  const q = store.saveQuote(sampleQuote({ client: { name: 'Acme "Quotes", Ltd' } }));
+  store.convertQuoteToInvoice(q.id);
+  store.saveQuote(sampleQuote({ client: { name: "Open Client" } }));
+  const fresh = newStore();
+  const summary = fresh.importJson(store.exportJson());
+  assert.deepEqual(summary, { invoices: 1, quotes: 2, clients: 2, receipts: 0 });
+  assert.equal(fresh.getQuote(q.id).invoiceId, store.getQuote(q.id).invoiceId, "quote/invoice link is preserved");
+
+  const lines = fresh.quotesToCsv().split("\r\n");
+  assert.equal(lines.length, 3);
+  assert.ok(lines[0].startsWith("Quotation,Status,Issue date,Valid until,Client"));
+  const invoicedRow = lines.find((l) => l.startsWith("QUO-0001"));
+  assert.ok(/,Invoiced,/.test(invoicedRow), invoicedRow);
+  assert.ok(/"Acme ""Quotes"", Ltd"/.test(invoicedRow), "quotes escaped");
+  assert.ok(/,INV-0001$/.test(invoicedRow), "invoice number in the last column");
+  const openRow = lines.find((l) => l.startsWith("QUO-0002"));
+  assert.ok(/,Open,/.test(openRow) && /,$/.test(openRow), openRow);
+});
+
+test("routes for quotations parse like invoice routes", () => {
+  const { parseRoute } = api;
+  assert.equal(parseRoute("#/quotes").name, "quotes");
+  assert.equal(parseRoute("#/quotes/new").name, "quote-new");
+  assert.deepEqual(parseRoute("#/quotes/abc"), { name: "quote-view", id: "abc", query: {} });
+  assert.equal(parseRoute("#/quotes/abc/edit").name, "quote-edit");
+  assert.equal(parseRoute("#/quotes/abc/duplicate").name, "quote-duplicate");
+  assert.deepEqual(parseRoute("#/quotes/new?client=c1").query, { client: "c1" });
 });
