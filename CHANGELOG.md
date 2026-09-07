@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   stored in the browser (localStorage); no account or backend is required.
 - Unit tests for the invoicing logic (`tests/invoicing.test.js`), run with
   `npm test` via the built-in Node test runner.
+- Repository linter configuration in `.github/linters/` (`.stylelintrc.json`,
+  `.markdown-lint.yml`) so the Super-Linter workflow checks CSS and Markdown
+  with rules that match the conventions already used in this codebase.
 - GitHub Actions CI/CD pipeline
 - Issue templates for bugs and features
 - Contributing guidelines

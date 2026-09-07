@@ -1,0 +1,23 @@
+---
+###########################
+## Markdown Linter rules ##
+###########################
+# Based on the super-linter defaults, adjusted for this repository.
+# Linter rules doc: https://github.com/DavidAnson/markdownlint
+
+MD004: false                  # Unordered list style
+MD007:
+  indent: 2                   # Unordered list indentation
+MD013:
+  line_length: 400            # Line length 80 is far too short
+MD024:
+  siblings_only: true         # CHANGELOG repeats "### Added" per release
+MD026:
+  punctuation: ".,;:!。，；:"  # List of not allowed
+MD029: false                  # Ordered list item prefix
+MD033: false                  # Allow inline HTML
+MD034: false                  # Bare URLs / e-mails in contact sections
+MD036: false                  # Emphasis used instead of a heading
+
+# Rules by tags
+blank_lines: false            # Error on blank lines

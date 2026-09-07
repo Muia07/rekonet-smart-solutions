@@ -484,7 +484,7 @@ dialog:not([open]) { display: none; }
 /* Print — only the document itself, clean on A4                     */
 /* ---------------------------------------------------------------- */
 
-@page { size: A4; margin: 14mm 12mm; }
+@page { size: a4; margin: 14mm 12mm; }
 
 @media print {
   html, body { background: #fff !important; font-size: 11.5pt; color: #000; }
