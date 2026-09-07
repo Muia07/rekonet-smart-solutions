@@ -15,7 +15,7 @@ function loadDbPosts() {
   try {
     const rows = require("./content/blog-posts.json");
     return Array.isArray(rows) ? rows : [];
-  } catch {
+  } catch (error) {
     return [];
   }
 }
