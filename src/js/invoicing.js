@@ -1957,10 +1957,11 @@
     return '<datalist id="currency-codes">' + CURRENCIES.map(function (c) { return '<option value="' + c + '"></option>'; }).join("") + "</datalist>";
   }
 
-  function itemRowHtml(item) {
+  function itemRowHtml(item, index) {
     var price = item && Number.isFinite(item.unitPrice) && item.unitPrice !== null ? money.plain(item.unitPrice) : "";
     return (
       '<tr class="item-row">' +
+      '<td class="item-num" data-label="Item">' + (index || "") + '</td>' +
       '<td data-label="Description"><input name="item-description" value="' + esc(item ? item.description : "") + '" placeholder="Description of product or service" aria-label="Item description"></td>' +
       '<td data-label="Qty"><input name="item-qty" type="number" min="0" step="any" inputmode="decimal" value="' + esc(item ? formatQty(item.qty) : "1") + '" aria-label="Quantity"></td>' +
       '<td data-label="Unit price"><input name="item-price" inputmode="decimal" value="' + esc(price) + '" placeholder="0.00" aria-label="Unit price"></td>' +
@@ -2132,8 +2133,8 @@
       field("Currency", input("currency", doc.currency, 'list="currency-codes" maxlength="3" autocapitalize="characters" class="input-upper"')) +
       "</div>" + currencyDatalist() + "</section>" +
       '<section class="card"><h2 class="card-title">Items</h2>' +
-      '<div class="table-wrap"><table class="items-editor"><thead><tr><th>Description</th><th class="col-qty">Qty</th><th class="col-price">Unit price</th><th class="num col-amount">Amount</th><th class="col-remove"><span class="visually-hidden">Remove</span></th></tr></thead>' +
-      '<tbody data-item-rows>' + doc.items.map(itemRowHtml).join("") + "</tbody></table></div>" +
+      '<div class="table-wrap"><table class="items-editor"><thead><tr><th class="col-index">#</th><th>Description</th><th class="col-qty">Qty</th><th class="col-price">Unit price</th><th class="num col-amount">Amount</th><th class="col-remove"><span class="visually-hidden">Remove</span></th></tr></thead>' +
+      '<tbody data-item-rows>' + doc.items.map(function (item, i) { return itemRowHtml(item, i + 1); }).join("") + "</tbody></table></div>" +
       '<button type="button" class="btn btn-ghost btn-sm" data-action="add-item">+ Add item</button>' +
       "</section>" +
       '<section class="card"><h2 class="card-title">Discount &amp; ' + esc(taxLabel) + '</h2><div class="form-grid form-grid-4">' +
@@ -2590,7 +2591,7 @@
   function addItemRow(ui, form) {
     var body = form.querySelector("[data-item-rows]");
     var tmp = ui.doc.createElement("tbody");
-    tmp.innerHTML = itemRowHtml(null);
+    tmp.innerHTML = itemRowHtml(null, body.querySelectorAll(".item-row").length + 1);
     var row = tmp.firstElementChild;
     body.appendChild(row);
     var first = row.querySelector('[name="item-description"]');
@@ -2608,6 +2609,11 @@
     } else {
       row.remove();
     }
+    // Keep the visible numbering 1..n so it matches the saved line items.
+    body.querySelectorAll(".item-row").forEach(function (r, i) {
+      var numCell = r.querySelector(".item-num");
+      if (numCell) numCell.textContent = String(i + 1);
+    });
     refreshEditorTotals(ui, form);
   }
 
