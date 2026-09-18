@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Item numbers in the invoice/quotation editor.** The Items table now starts
+  with a `#` column (renumbered automatically when rows are added or removed)
+  so long invoices are easy to follow while editing, matching the numbers on
+  the printed document. On phones the number sits beside the item card.
 - **Quotations** in the invoicing tool. Choose between a new quotation and a
   new invoice from the same editor; quotations get their own number sequence
   (`QUO-0001`), a *valid until* date, print/PDF and WhatsApp/email sharing,
@@ -33,18 +37,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Contributing guidelines
 - Changelog documentation
 
-### Added
-- **Item numbers in the invoice/quotation editor.** The Items table now starts
-  with a `#` column (renumbered automatically when rows are added or removed)
-  so long invoices are easy to follow while editing, matching the numbers on
-  the printed document. On phones the number sits beside the item card.
-
 ### Changed
 - The SPA's footer (home, services, pricing, contact, blog articles, admin and
   every other app page) now includes the "Free quotation, invoicing & receipts
   tool" link to `/invoicing/`, matching the footer already used on the static
   blog and SEO pages — so the free invoicing tool is one click away on every
   page of the site.
+- Static SEO/blog pages (`/blog/` and all articles) now share the SPA's chrome: the
+  same 8-link navbar with a "Get a Demo" CTA and mobile menu, the same footer,
+  matching colours and typography, and the WhatsApp float — so moving between
+  blog and app pages feels continuous while the pages stay static HTML for SEO.
 
 ### Fixed
 - In the invoicing tool, line-item numbers on printed invoices, quotations and
@@ -53,11 +55,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   was squeezed by long descriptions. The column now keeps its width and
   refuses to break the number across lines, and the amount/price cells in the
   same table can no longer break mid-figure in a PDF either.
-
-- Static SEO/blog pages (`/blog/` and all articles) now share the SPA's chrome: the
-  same 8-link navbar with a "Get a Demo" CTA and mobile menu, the same footer,
-  matching colours and typography, and the WhatsApp float — so moving between
-  blog and app pages feels continuous while the pages stay static HTML for SEO.
 
 ## [2.0.0] - 2026-08-25
 
