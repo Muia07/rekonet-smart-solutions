@@ -291,10 +291,12 @@ input[type="file"] { min-height: 0; }
 .items-editor th { text-align: left; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); padding: 0 8px 8px 0; font-weight: 600; }
 .items-editor td { padding: 0 8px 8px 0; vertical-align: middle; }
 .items-editor td:last-child, .items-editor th:last-child { padding-right: 0; }
+.items-editor .col-index { width: 40px; min-width: 40px; white-space: nowrap; }
 .items-editor .col-qty { width: 90px; }
 .items-editor .col-price { width: 150px; }
 .items-editor .col-amount { width: 130px; }
 .items-editor .col-remove { width: 40px; }
+.items-editor td.item-num { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .items-editor .item-amount { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--ink); }
 
 .settings-grid { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); align-items: start; }
@@ -354,8 +356,15 @@ input[type="file"] { min-height: 0; }
 .doc-items th.num { text-align: right; }
 .doc-items td { padding: 10px 12px; border-bottom: 1px solid var(--line-soft); vertical-align: top; color: var(--text); }
 .doc-items tbody tr:nth-child(even) td { background: hsl(210, 20%, 98.5%); }
-.doc-items .col-index { width: 36px; }
+/* Line-item numbers must never wrap: with the body's overflow-wrap: anywhere
+   the narrow column can otherwise collapse to one character, so from item 10
+   on the digits stack ("1" on top of "0") instead of reading "10" — most
+   visible in the generated PDF. The same squeeze could otherwise break an
+   amount mid-figure, so every numeric cell in the document table stays on
+   one line too. */
+.doc-items .col-index { width: 36px; min-width: 36px; white-space: nowrap; }
 .doc-items td.col-index { color: var(--muted); }
+.doc-items td.num, .doc-items th.num { white-space: nowrap; }
 .doc-items td.num { font-variant-numeric: tabular-nums; }
 .receipt-summary { margin-top: 0; }
 .receipt-summary tbody tr:last-child td { border-bottom: 0; }
@@ -457,22 +466,27 @@ dialog:not([open]) { display: none; }
   .items-editor, .items-editor tbody, .items-editor td { display: block; }
   .items-editor tr.item-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto;
-    grid-template-areas: "desc desc desc" "qty price remove" "amount amount amount";
+    grid-template-columns: auto minmax(0, 1fr) minmax(0, 1.4fr) auto;
+    grid-template-areas:
+      "num desc desc desc"
+      "num qty price remove"
+      "amount amount amount amount";
     gap: 8px;
     padding: 12px 0;
     border-bottom: 1px solid var(--line-soft);
   }
   .item-row td { padding: 0; }
   .item-row td::before { content: attr(data-label); display: block; font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 3px; }
-  .item-row td:nth-child(1) { grid-area: desc; }
-  .item-row td:nth-child(2) { grid-area: qty; }
-  .item-row td:nth-child(3) { grid-area: price; }
-  .item-row td:nth-child(4) { grid-area: amount; display: flex; justify-content: space-between; align-items: baseline; }
-  .item-row td:nth-child(4)::before { margin: 0; }
-  .item-row td:nth-child(5) { grid-area: remove; align-self: end; }
-  .item-row td:nth-child(5)::before { content: none; }
-  .items-editor .col-qty, .items-editor .col-price, .items-editor .col-amount, .items-editor .col-remove { width: auto; }
+  .item-row td:nth-child(1) { grid-area: num; align-self: start; padding-top: 15px; }
+  .item-row td:nth-child(1)::before { content: none; }
+  .item-row td:nth-child(2) { grid-area: desc; }
+  .item-row td:nth-child(3) { grid-area: qty; }
+  .item-row td:nth-child(4) { grid-area: price; }
+  .item-row td:nth-child(5) { grid-area: amount; display: flex; justify-content: space-between; align-items: baseline; }
+  .item-row td:nth-child(5)::before { margin: 0; }
+  .item-row td:nth-child(6) { grid-area: remove; align-self: end; }
+  .item-row td:nth-child(6)::before { content: none; }
+  .items-editor .col-index, .items-editor .col-qty, .items-editor .col-price, .items-editor .col-amount, .items-editor .col-remove { width: auto; }
 }
 
 @media (max-width: 480px) {
